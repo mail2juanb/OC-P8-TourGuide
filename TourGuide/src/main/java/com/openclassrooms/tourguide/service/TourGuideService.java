@@ -96,7 +96,7 @@ public class TourGuideService {
 	 * @param user user
 	 * @return size 5 attractionDTOList
 	 */
-	public List<AttractionDTO> getFiveNearbyAttractions(User user) {
+	public List<AttractionDTO> getNearbyAttractions(User user) {
 		List<Attraction> attractions = gpsUtil.getAttractions();
 		List<AttractionDTO> attractionDTOList = new ArrayList<>();
 		Location userLocation = getUserLocation(user).location;

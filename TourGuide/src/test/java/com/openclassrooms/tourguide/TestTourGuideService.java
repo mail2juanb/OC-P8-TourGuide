@@ -104,7 +104,7 @@ public class TestTourGuideService {
 
 		tourGuideService.trackUserLocation(user);
 
-		List<AttractionDTO> attractions = tourGuideService.getFiveNearbyAttractions(user);
+		List<AttractionDTO> attractions = tourGuideService.getNearbyAttractions(user);
 
 		tourGuideService.tracker.stopTracking();
 
