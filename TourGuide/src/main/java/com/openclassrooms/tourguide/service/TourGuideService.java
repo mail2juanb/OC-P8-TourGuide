@@ -1,5 +1,6 @@
 package com.openclassrooms.tourguide.service;
 
+import com.openclassrooms.tourguide.DTO.AttractionDTO;
 import com.openclassrooms.tourguide.helper.InternalTestHelper;
 import com.openclassrooms.tourguide.tracker.Tracker;
 import com.openclassrooms.tourguide.user.User;
@@ -7,14 +8,7 @@ import com.openclassrooms.tourguide.user.UserReward;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -27,6 +21,7 @@ import gpsUtil.location.Attraction;
 import gpsUtil.location.Location;
 import gpsUtil.location.VisitedLocation;
 
+import rewardCentral.RewardCentral;
 import tripPricer.Provider;
 import tripPricer.TripPricer;
 
@@ -95,15 +90,32 @@ public class TourGuideService {
 		return visitedLocation;
 	}
 
-	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
-		List<Attraction> nearbyAttractions = new ArrayList<>();
-		for (Attraction attraction : gpsUtil.getAttractions()) {
-			if (rewardsService.isWithinAttractionProximity(attraction, visitedLocation.location)) {
-				nearbyAttractions.add(attraction);
-			}
-		}
+	/**
+	 * Get the closest five attractions to the user and sort it by distance in a 5 objects sized list
+	 *
+	 * @param user user
+	 * @return size 5 attractionDTOList
+	 */
+	public List<AttractionDTO> getFiveNearbyAttractions(User user) {
+		List<Attraction> attractions = gpsUtil.getAttractions();
+		List<AttractionDTO> attractionDTOList = new ArrayList<>();
+		Location userLocation = getUserLocation(user).location;
 
-		return nearbyAttractions;
+		for(Attraction attraction : attractions) {
+			Location attractionLocation = new Location(attraction.latitude, attraction.longitude);
+			Double distance = rewardsService.getDistance(attractionLocation, userLocation);
+			int rewardPoints = rewardsService.getRewardPoints(attraction, user);
+
+			AttractionDTO attractionDTO = new AttractionDTO();
+			attractionDTO.setAttractionName(attraction.attractionName);
+			attractionDTO.setAttractionLocation(attractionLocation);
+			attractionDTO.setUserLocation(userLocation);
+			attractionDTO.setDistance(distance);
+			attractionDTO.setRewardPoint(rewardPoints);
+
+			attractionDTOList.add(attractionDTO);
+		}
+		return attractionDTOList.stream().sorted(Comparator.comparingDouble(AttractionDTO::getDistance)).limit(5).collect(Collectors.toList());
 	}
 
 	private void addShutDownHook() {
