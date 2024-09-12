@@ -9,6 +9,10 @@ import com.openclassrooms.tourguide.user.UserReward;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -31,6 +35,7 @@ public class TourGuideService {
 	private final GpsUtil gpsUtil;
 	private final RewardsService rewardsService;
 	private final TripPricer tripPricer = new TripPricer();
+	private final ExecutorService executorService = Executors.newFixedThreadPool(100);
 	public final Tracker tracker;
 	boolean testMode = true;
 
@@ -54,10 +59,16 @@ public class TourGuideService {
 		return user.getUserRewards();
 	}
 
-	public VisitedLocation getUserLocation(User user) {
-		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation()
+	public VisitedLocation getUserLocation(User user) throws ExecutionException, InterruptedException {
+		if(user.getVisitedLocations().size() > 0) {
+			return user.getLastVisitedLocation();
+		} else {
+			Future<VisitedLocation> visitedLocation = trackUserLocation(user);
+			return visitedLocation.get();
+		}
+		/*VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation()
 				: trackUserLocation(user);
-		return visitedLocation;
+		return visitedLocation;*/
 	}
 
 	public User getUser(String userName) {
@@ -83,11 +94,14 @@ public class TourGuideService {
 		return providers;
 	}
 
-	public VisitedLocation trackUserLocation(User user) {
-		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
-		user.addToVisitedLocations(visitedLocation);
-		rewardsService.calculateRewards(user);
-		return visitedLocation;
+	public Future<VisitedLocation> trackUserLocation(User user) {
+		Future<VisitedLocation> future = executorService.submit(() -> {
+			VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
+			user.addToVisitedLocations(visitedLocation);
+			rewardsService.calculateRewards(user);
+			return visitedLocation;
+		});
+		return future;
 	}
 
 	/**
@@ -96,7 +110,7 @@ public class TourGuideService {
 	 * @param user user
 	 * @return size 5 attractionDTOList
 	 */
-	public List<AttractionDTO> getNearbyAttractions(User user) {
+	public List<AttractionDTO> getNearbyAttractions(User user) throws ExecutionException, InterruptedException {
 		List<Attraction> attractions = gpsUtil.getAttractions();
 		List<AttractionDTO> attractionDTOList = new ArrayList<>();
 		Location userLocation = getUserLocation(user).location;
