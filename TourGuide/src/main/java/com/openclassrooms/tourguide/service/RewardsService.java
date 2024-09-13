@@ -1,7 +1,11 @@
 package com.openclassrooms.tourguide.service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.springframework.stereotype.Service;
 
@@ -23,6 +27,7 @@ public class RewardsService {
 	private int attractionProximityRange = 200;
 	private final GpsUtil gpsUtil;
 	private final RewardCentral rewardsCentral;
+	private final ExecutorService executorService = Executors.newFixedThreadPool(200);
 	
 	public RewardsService(GpsUtil gpsUtil, RewardCentral rewardCentral) {
 		this.gpsUtil = gpsUtil;
@@ -41,18 +46,22 @@ public class RewardsService {
 		//add user visited locations to a CopyOnWriteArrayList object to avoid ConcurrentmodificationException
 		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
 		List<Attraction> attractions = gpsUtil.getAttractions();
-		synchronized(userLocations) {
-			for (VisitedLocation visitedLocation : userLocations) {
-				for (Attraction attraction : attractions) {
+
+		List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+		for (VisitedLocation visitedLocation : userLocations) {
+			for (Attraction attraction : attractions) {
+				CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
 					if (user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
 						if (nearAttraction(visitedLocation, attraction)) {
 							user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
 						}
 					}
-
-				}
+				}, executorService);
+				futures.add(future);
 			}
 		}
+		CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 	}
 	
 	public boolean isWithinAttractionProximity(Attraction attraction, Location location) {

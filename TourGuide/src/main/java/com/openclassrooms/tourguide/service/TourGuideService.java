@@ -9,10 +9,7 @@ import com.openclassrooms.tourguide.user.UserReward;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -63,7 +60,7 @@ public class TourGuideService {
 		if(user.getVisitedLocations().size() > 0) {
 			return user.getLastVisitedLocation();
 		} else {
-			Future<VisitedLocation> visitedLocation = trackUserLocation(user);
+			CompletableFuture<VisitedLocation> visitedLocation = trackUserLocation(user);
 			return visitedLocation.get();
 		}
 		/*VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation()
@@ -94,15 +91,21 @@ public class TourGuideService {
 		return providers;
 	}
 
-	public Future<VisitedLocation> trackUserLocation(User user) {
-		Future<VisitedLocation> future = executorService.submit(() -> {
+	/**
+	 * Use multi threading to improve the application performances
+	 *
+	 * @param user
+	 * @return user visited location 100 by 100
+	 */
+	public CompletableFuture<VisitedLocation> trackUserLocation(User user) {
+		return CompletableFuture.supplyAsync(() -> {
 			VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
 			user.addToVisitedLocations(visitedLocation);
 			rewardsService.calculateRewards(user);
 			return visitedLocation;
-		});
-		return future;
+		}, executorService);
 	}
+
 
 	/**
 	 * Get the closest five attractions to the user and sort it by distance in a 5 objects sized list
