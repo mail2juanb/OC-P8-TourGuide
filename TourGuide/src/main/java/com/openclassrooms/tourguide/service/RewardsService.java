@@ -47,21 +47,15 @@ public class RewardsService {
 		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
 		List<Attraction> attractions = gpsUtil.getAttractions();
 
-		List<CompletableFuture<Void>> futures = new ArrayList<>();
-
 		for (VisitedLocation visitedLocation : userLocations) {
 			for (Attraction attraction : attractions) {
-				CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-					if (user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
-						if (nearAttraction(visitedLocation, attraction)) {
-							user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
-						}
+				if (user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
+					if (nearAttraction(visitedLocation, attraction)) {
+						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
 					}
-				}, executorService);
-				futures.add(future);
+				}
 			}
 		}
-		CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 	}
 	
 	public boolean isWithinAttractionProximity(Attraction attraction, Location location) {

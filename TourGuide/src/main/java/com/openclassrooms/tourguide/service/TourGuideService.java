@@ -85,12 +85,6 @@ public class TourGuideService {
 		return providers;
 	}
 
-	/**
-	 * Use multi threading to improve the application performances
-	 *
-	 * @param user
-	 * @return user visited location 100 by 100
-	 */
 	public VisitedLocation trackUserLocation(User user) {
 		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
 		user.addToVisitedLocations(visitedLocation);
@@ -98,6 +92,25 @@ public class TourGuideService {
 		return visitedLocation;
 	}
 
+	/**
+	 * Use multi threading to improve the application performances
+	 *
+	 * @param users
+	 * @return user visited location 100 by 100
+	 */
+	public List<VisitedLocation> trackAllUsersLocation(List<User> users) {
+		List<VisitedLocation> visitedLocationMap = new ArrayList<>();
+
+		for(User user : users) {
+			CompletableFuture.supplyAsync(() -> {
+				VisitedLocation visitedLocation = trackUserLocation(user);
+				visitedLocationMap.add(visitedLocation);
+				return visitedLocation;
+			}, executorService);
+		}
+
+		return visitedLocationMap;
+	}
 
 	/**
 	 * Get the closest five attractions to the user and sort it by distance in a 5 objects sized list
