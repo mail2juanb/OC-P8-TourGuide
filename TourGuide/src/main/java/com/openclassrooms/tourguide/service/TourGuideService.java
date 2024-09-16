@@ -56,16 +56,10 @@ public class TourGuideService {
 		return user.getUserRewards();
 	}
 
-	public VisitedLocation getUserLocation(User user) throws ExecutionException, InterruptedException {
-		if(user.getVisitedLocations().size() > 0) {
-			return user.getLastVisitedLocation();
-		} else {
-			CompletableFuture<VisitedLocation> visitedLocation = trackUserLocation(user);
-			return visitedLocation.get();
-		}
-		/*VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation()
+	public VisitedLocation getUserLocation(User user) {
+		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation()
 				: trackUserLocation(user);
-		return visitedLocation;*/
+		return visitedLocation;
 	}
 
 	public User getUser(String userName) {
@@ -97,13 +91,11 @@ public class TourGuideService {
 	 * @param user
 	 * @return user visited location 100 by 100
 	 */
-	public CompletableFuture<VisitedLocation> trackUserLocation(User user) {
-		return CompletableFuture.supplyAsync(() -> {
-			VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
-			user.addToVisitedLocations(visitedLocation);
-			rewardsService.calculateRewards(user);
-			return visitedLocation;
-		}, executorService);
+	public VisitedLocation trackUserLocation(User user) {
+		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
+		user.addToVisitedLocations(visitedLocation);
+		rewardsService.calculateRewards(user);
+		return visitedLocation;
 	}
 
 
