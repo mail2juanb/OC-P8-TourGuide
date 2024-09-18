@@ -2,10 +2,7 @@ package com.openclassrooms.tourguide.service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 import org.springframework.stereotype.Service;
 
@@ -47,24 +44,28 @@ public class RewardsService {
 		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
 		List<Attraction> attractions = gpsUtil.getAttractions();
 
-		List<CompletableFuture<Void>> futures = new ArrayList<>();
-
 		for (VisitedLocation visitedLocation : userLocations) {
 			for (Attraction attraction : attractions) {
-				CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-					if (user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
-						if (nearAttraction(visitedLocation, attraction)) {
-							UserReward reward = new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user));
-							user.addUserReward(reward);
-							System.out.println(reward);
-						}
+				if (user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
+					if (nearAttraction(visitedLocation, attraction)) {
+						UserReward reward = new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user));
+						user.addUserReward(reward);
+						System.out.println(reward);
 					}
-				}, executorService);
-				futures.add(future);
+				}
 			}
 		}
+	}
 
-		CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+	public void calculateAllUsersRewards(List<User> users) {
+		users.forEach(user -> executorService.submit(new Thread(() -> calculateRewards(user))));
+
+		executorService.shutdown();
+		try {
+			executorService.awaitTermination(20, TimeUnit.MINUTES);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public boolean isWithinAttractionProximity(Attraction attraction, Location location) {
