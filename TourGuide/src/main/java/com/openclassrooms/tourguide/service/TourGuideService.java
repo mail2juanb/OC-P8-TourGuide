@@ -32,7 +32,7 @@ public class TourGuideService {
 	private final GpsUtil gpsUtil;
 	private final RewardsService rewardsService;
 	private final TripPricer tripPricer = new TripPricer();
-	private final ExecutorService executorService = Executors.newFixedThreadPool(100);
+	private final ExecutorService executorService = Executors.newFixedThreadPool(200);
 	public final Tracker tracker;
 	boolean testMode = true;
 
@@ -99,18 +99,26 @@ public class TourGuideService {
 	 * @return user visited location 100 by 100
 	 */
 	public List<VisitedLocation> trackAllUsersLocation(List<User> users) {
-		List<VisitedLocation> visitedLocationMap = new ArrayList<>();
+		// Use thread-safe list or gather results with CompletableFuture
+		List<VisitedLocation> visitedLocations = Collections.synchronizedList(new ArrayList<>());
+		List<CompletableFuture<Void>> futures = new ArrayList<>();
 
-		for(User user : users) {
-			CompletableFuture.supplyAsync(() -> {
+		for (User user : users) {
+			CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
 				VisitedLocation visitedLocation = trackUserLocation(user);
-				visitedLocationMap.add(visitedLocation);
+				visitedLocations.add(visitedLocation);
 				return visitedLocation;
-			}, executorService);
+			}, executorService).thenAccept(result -> {});
+
+			futures.add(future);
 		}
 
-		return visitedLocationMap;
+		CompletableFuture<Void> allOf = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+		allOf.join();
+
+		return visitedLocations;
 	}
+
 
 	/**
 	 * Get the closest five attractions to the user and sort it by distance in a 5 objects sized list
