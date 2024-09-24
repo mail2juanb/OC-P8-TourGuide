@@ -96,7 +96,7 @@ public class TourGuideService {
 	 * Use multi threading to improve the application performances
 	 *
 	 * @param users
-	 * @return user visited location 100 by 100
+	 * @return user visited location 200 by 200
 	 */
 	public List<VisitedLocation> trackAllUsersLocation(List<User> users) {
 		// Use thread-safe list or gather results with CompletableFuture

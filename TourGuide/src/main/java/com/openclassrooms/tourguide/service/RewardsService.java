@@ -57,6 +57,12 @@ public class RewardsService {
 		}
 	}
 
+	/**
+	 * Use multi threading to improve the application performances
+	 *
+	 * @param users
+	 * @return user rewards 200 by 200
+	 */
 	public void calculateAllUsersRewards(List<User> users) {
 		users.forEach(user -> executorService.submit(new Thread(() -> calculateRewards(user))));
 
