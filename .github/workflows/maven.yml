@@ -37,10 +37,10 @@ jobs:
       run: mvn compile -B --file ./TourGuide/pom.xml
     
     - name: Test with Maven
-      run: mvn test -B
+      run: mvn test -B --file ./TourGuide/pom.xml
     
     - name: Package with Maven
-      run: mvn package -DskipTests=true -B
+      run: mvn package -DskipTests=true -B --file ./TourGuide/pom.xml
     
     - name: Upload JAR
       uses: actions/upload-artifact@v4
