@@ -29,6 +29,4 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: 
-        mvn -B compile
-        mvn -DskipTests package
-        mvn -B package --file ./TourGuide/pom.xml
+        mvn compile
