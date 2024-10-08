@@ -31,4 +31,4 @@ jobs:
       run: 
         mvn -B compile
         mvn -DskipTests package
-        mvn -B package --file /TourGuide/pom.xml
+        mvn -B package --file ./TourGuide/pom.xml
