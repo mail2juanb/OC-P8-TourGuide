@@ -27,8 +27,23 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
         cache: maven
-    - name: Build with Maven
-      run: 
-        mvn -B compile
-        mvn -DskipTests package
-        mvn -B package --file ./TourGuide/pom.xml
+    - name: Install Dependencies
+      run: |
+        mvn install:install-file -Dfile=./TourGuide/libs/gpsUtil.jar -DgroupId=gpsUtil -DartifactId=gpsUtil -Dversion=1 -Dpackaging=jar
+        mvn install:install-file -Dfile=./TourGuide/libs/RewardCentral.jar -DgroupId=rewardCentral -DartifactId=rewardCentral -Dversion=1 -Dpackaging=jar
+        mvn install:install-file -Dfile=./TourGuide/libs/TripPricer.jar -DgroupId=tripPricer -DartifactId=tripPricer -Dversion=1 -Dpackaging=jar
+          
+    - name: Compile with Maven
+      run: mvn compile -B --file ./TourGuide/pom.xml
+    
+    - name: Test with Maven
+      run: mvn test -B --file ./TourGuide/pom.xml
+    
+    - name: Package with Maven
+      run: mvn package -DskipTests=true -B --file ./TourGuide/pom.xml
+    
+    - name: Upload JAR
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-jar
+        path: ./TourGuide/target/*.jar.original
