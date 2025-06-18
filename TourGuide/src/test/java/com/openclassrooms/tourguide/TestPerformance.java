@@ -45,14 +45,45 @@ public class TestPerformance {
 	 * TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
 	 */
 
-	@Disabled
+	/*
+	 * Remarque sur les améliorations de performances :
+	 *
+	 * Le nombre d'utilisateurs générés pour les tests à haut volume peut être facilement
+	 * ajusté à l'aide de cette méthode :
+	 *
+	 * InternalTestHelper.setInternalUserNumber(100000);
+	 *
+	 *
+	 * Ces tests peuvent être modifiés pour s'adapter à de nouvelles solutions, à condition que
+	 * les mesures de performance à la fin des tests restent cohérentes.
+	 *
+	 * Voici les mesures de performance que nous essayons d'atteindre :
+	 *
+	 * highVolumeTrackLocation : 100 000 utilisateurs en 15 minutes :
+	 * assertTrue(TimeUnit.MINUTES.toSeconds(15) >=
+	 * TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
+	 *
+	 * highVolumeGetRewards : 100 000 utilisateurs en 20 minutes :
+	 * assertTrue(TimeUnit.MINUTES.toSeconds(20) >=
+	 * TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
+	 */
+
+
+	// NOTE 250618 : Le test était désactivé lorsque j'ai récupéré l'application
+	//@Disabled
 	@Test
 	public void highVolumeTrackLocation() {
+
+		// 250618 NOTE : Constante pour gérer les différents cas
+		final int NUM_USERS = 100;
+		final int TIME_THRESHOLD_SECONDS = 15;
+
+
 		GpsUtil gpsUtil = new GpsUtil();
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
 		// Users should be incremented up to 100,000, and test finishes within 15
 		// minutes
-		InternalTestHelper.setInternalUserNumber(100);
+		InternalTestHelper.setInternalUserNumber(NUM_USERS);
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
 		List<User> allUsers = new ArrayList<>();
@@ -68,18 +99,29 @@ public class TestPerformance {
 
 		System.out.println("highVolumeTrackLocation: Time Elapsed: "
 				+ TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()) + " seconds.");
-		assertTrue(TimeUnit.MINUTES.toSeconds(15) >= TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
+
+		// NOTE 250618 : J'ai changé le code pour passer en secondes. C'est mieux d'avoir toujours la même unité
+//		assertTrue(TimeUnit.MINUTES.toSeconds(75) >= TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
+		assertTrue(TIME_THRESHOLD_SECONDS >= TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
 	}
 
-	@Disabled
+
+	// NOTE 250618 : Le test était désactivé lorsque j'ai récupéré l'application
+	//@Disabled
 	@Test
 	public void highVolumeGetRewards() {
+
+		// 250618 NOTE : Constante pour gérer les différents cas
+		final int NUM_USERS = 100;
+		final int TIME_THRESHOLD_SECONDS = 1200;
+
+
 		GpsUtil gpsUtil = new GpsUtil();
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
 
 		// Users should be incremented up to 100,000, and test finishes within 20
 		// minutes
-		InternalTestHelper.setInternalUserNumber(100);
+		InternalTestHelper.setInternalUserNumber(NUM_USERS);
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
@@ -99,7 +141,7 @@ public class TestPerformance {
 
 		System.out.println("highVolumeGetRewards: Time Elapsed: " + TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime())
 				+ " seconds.");
-		assertTrue(TimeUnit.MINUTES.toSeconds(20) >= TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
+		assertTrue(TIME_THRESHOLD_SECONDS >= TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
 	}
 
 }

@@ -1,6 +1,9 @@
 package com.openclassrooms.tourguide.service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.springframework.stereotype.Service;
 
@@ -22,6 +25,10 @@ public class RewardsService {
 	private int attractionProximityRange = 200;
 	private final GpsUtil gpsUtil;
 	private final RewardCentral rewardsCentral;
+	// NOTE 250618 : Ajout d'une ConcurrentHashMap pour stocker des infos redondantes en cache (thread-safe)
+	private final Map<String, Double> distanceCache = new ConcurrentHashMap<>();
+
+
 	
 	public RewardsService(GpsUtil gpsUtil, RewardCentral rewardCentral) {
 		this.gpsUtil = gpsUtil;
@@ -35,14 +42,19 @@ public class RewardsService {
 	public void setDefaultProximityBuffer() {
 		proximityBuffer = defaultProximityBuffer;
 	}
-	
+
+
 	public void calculateRewards(User user) {
-		List<VisitedLocation> userLocations = user.getVisitedLocations();
+		// NOTE 250628 : Modification afin d'éviter l'erreur ConcurrentModificationException
+//		List<VisitedLocation> userLocations = user.getVisitedLocations();
+		List<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
 		List<Attraction> attractions = gpsUtil.getAttractions();
-		
+
 		for(VisitedLocation visitedLocation : userLocations) {
 			for(Attraction attraction : attractions) {
-				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
+				// NOTE 250623 : Ré-écriture pour meilleure compréhension
+//				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
+				if (user.getUserRewards().stream().noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))) {
 					if(nearAttraction(visitedLocation, attraction)) {
 						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
 					}
@@ -64,6 +76,17 @@ public class RewardsService {
 	}
 	
 	public double getDistance(Location loc1, Location loc2) {
+
+		// NOTE 250617 : Mettre en cache dans un ConcurrentHashMap.
+		//  En utilisant une Map pour stocker les distances déjà calculées pour des paires de localisations,
+		//  nous pouvons éviter de recalculer la distance pour les mêmes paires de points.
+		String cacheKey = getCacheKey(loc1, loc2);
+		Double cachedDistance = distanceCache.get(cacheKey);
+
+		if (cachedDistance != null) {
+			return cachedDistance;
+		}
+
         double lat1 = Math.toRadians(loc1.latitude);
         double lon1 = Math.toRadians(loc1.longitude);
         double lat2 = Math.toRadians(loc2.latitude);
@@ -74,7 +97,24 @@ public class RewardsService {
 
         double nauticalMiles = 60 * Math.toDegrees(angle);
         double statuteMiles = STATUTE_MILES_PER_NAUTICAL_MILE * nauticalMiles;
+
+		distanceCache.put(cacheKey, statuteMiles);
+
         return statuteMiles;
+	}
+
+	// NOTE 250618 : Implémenter une méthode getCacheKey.
+	//  La méthode getCacheKey génère une clé unique pour
+	//  chaque paire de localisations en utilisant leurs coordonnées.
+	private String getCacheKey(Location loc1, Location loc2) {
+		String loc1Key = loc1.latitude + "," + loc1.longitude;
+		String loc2Key = loc2.latitude + "," + loc2.longitude;
+
+		if (loc1Key.compareTo(loc2Key) < 0) {
+			return loc1Key + "|" + loc2Key;
+		} else {
+			return loc2Key + "|" + loc1Key;
+		}
 	}
 
 }

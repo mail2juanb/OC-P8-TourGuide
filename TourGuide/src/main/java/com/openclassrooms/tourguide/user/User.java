@@ -14,10 +14,21 @@ public class User {
 	private String phoneNumber;
 	private String emailAddress;
 	private Date latestLocationTimestamp;
+
+	// NOTE 250618 : Ces 2 listes sont susceptibles d'être modifiées tout en étant parcourues
+	// NOTE 250623 : En fait je pense que ce n'est pas ici qu'il faut l'utiliser
+//	private List<VisitedLocation> visitedLocations = new CopyOnWriteArrayList<>();
+//	private List<UserReward> userRewards = new CopyOnWriteArrayList<>();
 	private List<VisitedLocation> visitedLocations = new ArrayList<>();
 	private List<UserReward> userRewards = new ArrayList<>();
+
 	private UserPreferences userPreferences = new UserPreferences();
+
+	// NOTE 250618 : Cette liste est susceptible d'être modifiée tout en étant parcourues
+	// NOTE 250623 : En fait je pense que ce n'est pas ici qu'il faut l'utiliser
+//	private List<Provider> tripDeals = new CopyOnWriteArrayList<>();
 	private List<Provider> tripDeals = new ArrayList<>();
+
 	public User(UUID userId, String userName, String phoneNumber, String emailAddress) {
 		this.userId = userId;
 		this.userName = userName;
@@ -60,7 +71,7 @@ public class User {
 	public void addToVisitedLocations(VisitedLocation visitedLocation) {
 		visitedLocations.add(visitedLocation);
 	}
-	
+
 	public List<VisitedLocation> getVisitedLocations() {
 		return visitedLocations;
 	}
@@ -70,7 +81,9 @@ public class User {
 	}
 	
 	public void addUserReward(UserReward userReward) {
-		if(userRewards.stream().filter(r -> !r.attraction.attractionName.equals(userReward.attraction)).count() == 0) {
+		// NOTE 250628 : Ré-écriture pour meilleure lisibilité
+//		if(userRewards.stream().filter(r -> !r.attraction.attractionName.equals(userReward.attraction)).count() == 0) {
+		if (userRewards.stream().noneMatch(r -> r.attraction.attractionName.equals(userReward.attraction.attractionName))) {
 			userRewards.add(userReward);
 		}
 	}
