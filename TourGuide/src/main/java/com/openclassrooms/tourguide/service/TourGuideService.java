@@ -59,9 +59,24 @@ public class TourGuideService {
 		return user.getUserRewards();
 	}
 
+	/** Public method used to find either the last location visited by a user,
+	 * or their current location if no location has been visited.
+	 *
+	 * @param user {@link User} sent
+	 * @return {@link VisitedLocation} of the User requested
+	 */
 	public VisitedLocation getUserLocation(User user) {
-		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation()
-				: trackUserLocation(user);
+		logger.info("Method getUserLocation of {}", user.getUserName());
+		// NOTE 250623 : condition ré-écrite pour une meilleure lisibilité
+//		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation() : trackUserLocation(user);
+		VisitedLocation visitedLocation = (user.getVisitedLocations().isEmpty()) ? trackUserLocation(user) : user.getLastVisitedLocation();
+
+		logger.info("Method getUserLocation --> user.getVisitedLocations().isEmpty() = {}", user.getVisitedLocations().isEmpty());
+		if (user.getVisitedLocations().isEmpty()) {
+			logger.info("Method getUserLocation --> Method trackUserLocation --> VisitedLocation of {} ({}) is : lat = {} / long = {}", user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
+		} else {
+			logger.info("Method getUserLocation --> user.getLastVisitedLocation --> VisitedLocation of {} ({}) is : lat = {} / long = {}", user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
+		}
 		return visitedLocation;
 	}
 
@@ -89,8 +104,12 @@ public class TourGuideService {
 	}
 
 	public VisitedLocation trackUserLocation(User user) {
+		logger.info("Method trackUserLocation of {}", user.getUserName());
 		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
+		logger.info("Method trackUserLocation --> getUserLocation of {} ({}) is : lat = {} / long = {}", user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
 		user.addToVisitedLocations(visitedLocation);
+		logger.info("Method trackUserLocation --> {} visited {} locations", user.getUserName(), user.getVisitedLocations().size());
+		// FIXME 250623 : Pourquoi on déclenche calculateRewards ici ???? Remplir le UserReward ? Pas besoin ici!
 		rewardsService.calculateRewards(user);
 		return visitedLocation;
 	}
