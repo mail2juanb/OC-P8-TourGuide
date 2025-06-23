@@ -72,9 +72,9 @@ public class TourGuideController {
     public List<Attraction> getNearbyAttractions(@RequestParam String userName) {
         logger.info("Received /getNearbyAttractions about {}", userName);
         VisitedLocation visitedLocation = tourGuideService.getUserLocation(getUser(userName));
-        logger.info("VisitedLocation of {} : lat = {} / long = {}", userName, visitedLocation.location.latitude, visitedLocation.location.longitude);
+        logger.info("getNearbyAttractions --> VisitedLocation of {} : lat = {} / long = {}", userName, visitedLocation.location.latitude, visitedLocation.location.longitude);
         List<Attraction> attractionsOf = tourGuideService.getNearByAttractions(visitedLocation);
-        logger.info("There is {} attractions near {} ", attractionsOf.size(), userName);
+        logger.info("getNearbyAttractions --> There is {} attractions near {} ", attractionsOf.size(), userName);
         return attractionsOf;
     }
 
