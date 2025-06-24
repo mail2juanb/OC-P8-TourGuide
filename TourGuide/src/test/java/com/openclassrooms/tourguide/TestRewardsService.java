@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import gpsUtil.GpsUtil;
@@ -33,7 +33,12 @@ public class TestRewardsService {
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
 		Attraction attraction = gpsUtil.getAttractions().get(0);
 		user.addToVisitedLocations(new VisitedLocation(user.getUserId(), attraction, new Date()));
-		tourGuideService.trackUserLocation(user);
+
+		// NOTE 250624 : Implémentation du CompletableFuture sur trackUserLocation
+//		tourGuideService.trackUserLocation(user);
+		CompletableFuture<VisitedLocation> future = tourGuideService.trackUserLocation(user);
+		VisitedLocation visitedLocation = future.join();
+
 		List<UserReward> userRewards = user.getUserRewards();
 		tourGuideService.tracker.stopTracking();
 		assertTrue(userRewards.size() == 1);

@@ -5,10 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.time.StopWatch;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import gpsUtil.GpsUtil;
@@ -76,7 +76,10 @@ public class TestPerformance {
 
 		// 250618 NOTE : Constante pour gérer les différents cas
 		final int NUM_USERS = 100;
-		final int TIME_THRESHOLD_SECONDS = 15;
+		final int TIME_THRESHOLD_SECONDS = 900;  // 900s = 15min
+
+		// NOTE 250624 : Implémentation du CompletableFuture sur trackUserLocation
+		List<CompletableFuture<VisitedLocation>> futures = new ArrayList<>();
 
 
 		GpsUtil gpsUtil = new GpsUtil();
@@ -86,14 +89,20 @@ public class TestPerformance {
 		InternalTestHelper.setInternalUserNumber(NUM_USERS);
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
-		List<User> allUsers = new ArrayList<>();
-		allUsers = tourGuideService.getAllUsers();
+		List<User> allUsers = tourGuideService.getAllUsers();
 
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 		for (User user : allUsers) {
-			tourGuideService.trackUserLocation(user);
+			// NOTE 250624 : Implémentation du CompletableFuture sur trackUserLocation
+			CompletableFuture<VisitedLocation> future = tourGuideService.trackUserLocation(user);
+			futures.add(future);
 		}
+
+		// NOTE 250624 : Implémentation du CompletableFuture sur trackUserLocation - Attendre que toutes les futures soient complétées
+		CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+		allFutures.join();
+
 		stopWatch.stop();
 		tourGuideService.tracker.stopTracking();
 
@@ -113,7 +122,7 @@ public class TestPerformance {
 
 		// 250618 NOTE : Constante pour gérer les différents cas
 		final int NUM_USERS = 100;
-		final int TIME_THRESHOLD_SECONDS = 1200;
+		final int TIME_THRESHOLD_SECONDS = 1200;  // 1200s = 20min
 
 
 		GpsUtil gpsUtil = new GpsUtil();
@@ -127,8 +136,7 @@ public class TestPerformance {
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
 		Attraction attraction = gpsUtil.getAttractions().get(0);
-		List<User> allUsers = new ArrayList<>();
-		allUsers = tourGuideService.getAllUsers();
+		List<User> allUsers = tourGuideService.getAllUsers();
 		allUsers.forEach(u -> u.addToVisitedLocations(new VisitedLocation(u.getUserId(), attraction, new Date())));
 
 		allUsers.forEach(u -> rewardsService.calculateRewards(u));

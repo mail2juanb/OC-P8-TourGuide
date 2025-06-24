@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import com.openclassrooms.tourguide.attraction.AttractionInfo;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,12 @@ public class TestTourGuideService {
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
-		VisitedLocation visitedLocation = tourGuideService.trackUserLocation(user);
+
+		// NOTE 250624 : Modification suite à l'implémentation de CompletableFuture
+//		VisitedLocation visitedLocation = tourGuideService.trackUserLocation(user);
+		CompletableFuture<VisitedLocation> visitedLocationFuture = tourGuideService.trackUserLocation(user);
+		VisitedLocation visitedLocation = visitedLocationFuture.join();
+
 		tourGuideService.tracker.stopTracking();
 		assertTrue(visitedLocation.userId.equals(user.getUserId()));
 	}
@@ -84,7 +90,10 @@ public class TestTourGuideService {
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
-		VisitedLocation visitedLocation = tourGuideService.trackUserLocation(user);
+		// NOTE 250624 : Modification suite à l'implémentation de CompletableFuture
+//		VisitedLocation visitedLocation = tourGuideService.trackUserLocation(user);
+		CompletableFuture<VisitedLocation> visitedLocationFuture = tourGuideService.trackUserLocation(user);
+		VisitedLocation visitedLocation = visitedLocationFuture.join();
 
 		tourGuideService.tracker.stopTracking();
 
@@ -102,7 +111,10 @@ public class TestTourGuideService {
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
-		VisitedLocation visitedLocation = tourGuideService.trackUserLocation(user);
+		// NOTE 250624 : Modification suite à l'implémentation de CompletableFuture
+//		VisitedLocation visitedLocation = tourGuideService.trackUserLocation(user);
+		CompletableFuture<VisitedLocation> visitedLocationFuture = tourGuideService.trackUserLocation(user);
+		VisitedLocation visitedLocation = visitedLocationFuture.join();
 
 		// NOTE 250624 : Utilisation de la nouvelle méthode
 //		List<Attraction> attractions = tourGuideService.getNearByAttractions(visitedLocation);

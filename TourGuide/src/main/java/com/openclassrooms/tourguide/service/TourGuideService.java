@@ -9,6 +9,9 @@ import com.openclassrooms.tourguide.user.UserReward;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -27,6 +30,8 @@ import tripPricer.TripPricer;
 @Service
 public class TourGuideService {
 	private Logger logger = LoggerFactory.getLogger(TourGuideService.class);
+	// NOTE 250624 : Pool de thread
+	private final Executor executor = Executors.newFixedThreadPool(8);
 	private final GpsUtil gpsUtil;
 	private final RewardsService rewardsService;
 	private final TripPricer tripPricer = new TripPricer();
@@ -63,14 +68,13 @@ public class TourGuideService {
 		logger.info("Method getUserLocation of {}", user.getUserName());
 		// NOTE 250623 : condition ré-écrite pour une meilleure lisibilité
 //		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation() : trackUserLocation(user);
-		VisitedLocation visitedLocation = (user.getVisitedLocations().isEmpty()) ? trackUserLocation(user) : user.getLastVisitedLocation();
-
+//		VisitedLocation visitedLocation = (user.getVisitedLocations().isEmpty()) ? trackUserLocation(user) : user.getLastVisitedLocation();
+		// NOTE 250624 : Modification de la méthode pour obtenir le résultat du Completable
+		VisitedLocation visitedLocation = (user.getVisitedLocations().isEmpty())
+				? trackUserLocation(user).join()
+				: user.getLastVisitedLocation();
 		logger.info("Method getUserLocation --> user.getVisitedLocations().isEmpty() = {}", user.getVisitedLocations().isEmpty());
-		if (user.getVisitedLocations().isEmpty()) {
-			logger.info("Method getUserLocation --> Method trackUserLocation --> VisitedLocation of {} ({}) is : lat = {} / long = {}", user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
-		} else {
-			logger.info("Method getUserLocation --> user.getLastVisitedLocation --> VisitedLocation of {} ({}) is : lat = {} / long = {}", user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
-		}
+		logger.info("Method getUserLocation --> VisitedLocation of {} ({}) is : lat = {} / long = {}", user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
 		return visitedLocation;
 	}
 
@@ -97,15 +101,30 @@ public class TourGuideService {
 		return providers;
 	}
 
-	public VisitedLocation trackUserLocation(User user) {
-		logger.info("Method trackUserLocation of {}", user.getUserName());
-		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
-		logger.info("Method trackUserLocation --> getUserLocation of {} ({}) is : lat = {} / long = {}", user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
-		user.addToVisitedLocations(visitedLocation);
-		logger.info("Method trackUserLocation --> {} visited {} locations", user.getUserName(), user.getVisitedLocations().size());
-		// FIXME 250623 : Pourquoi on déclenche calculateRewards ici ???? Remplir le UserReward ?
-		rewardsService.calculateRewards(user);
-		return visitedLocation;
+	// NOTE 250624 : Ré-écriture de cette méthode en implémentant la classe CompletableFuture afin de ne pas perdre de temps lors de l'appel à gpsUtil
+//	public VisitedLocation trackUserLocation(User user) {
+//		logger.info("Method trackUserLocation of {}", user.getUserName());
+//		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
+//		logger.info("Method trackUserLocation --> getUserLocation of {} ({}) is : lat = {} / long = {}", user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
+//		user.addToVisitedLocations(visitedLocation);
+//		logger.info("Method trackUserLocation --> {} visited {} locations", user.getUserName(), user.getVisitedLocations().size());
+//		// NOTE 250624 : Pourquoi on déclenche calculateRewards ici ???? On renvoi un VisitedLocation (userId, location, timeVisited).
+//		//rewardsService.calculateRewards(user);
+//		return visitedLocation;
+//	}
+
+	public CompletableFuture<VisitedLocation> trackUserLocation(User user) {
+		return CompletableFuture.supplyAsync(() -> {
+			logger.info("Method trackUserLocation of {}", user.getUserName());
+			VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
+			logger.info("Method trackUserLocation --> getUserLocation of {} ({}) is : lat = {} / long = {}", user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
+			user.addToVisitedLocations(visitedLocation);
+			logger.info("Method trackUserLocation --> {} visited {} locations", user.getUserName(), user.getVisitedLocations().size());
+			// NOTE 250624 : Pourquoi on déclenche calculateRewards ici ???? On renvoi un VisitedLocation (userId, location, timeVisited).
+			rewardsService.calculateRewards(user);
+			return visitedLocation;},
+		executor);
+
 	}
 
 	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
