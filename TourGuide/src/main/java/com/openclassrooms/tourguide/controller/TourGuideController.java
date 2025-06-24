@@ -2,6 +2,7 @@ package com.openclassrooms.tourguide.controller;
 
 import java.util.List;
 
+import com.openclassrooms.tourguide.attraction.AttractionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import gpsUtil.location.Attraction;
 import gpsUtil.location.VisitedLocation;
 
 import com.openclassrooms.tourguide.service.TourGuideService;
@@ -68,17 +68,32 @@ public class TourGuideController {
     // The distance in miles between the user's location and each of the attractions.
     // The reward points for visiting each Attraction.
     //    Note: Attraction reward points can be gathered from RewardsCentral
+//    @RequestMapping("/getNearbyAttractions")
+//    public List<AttractionInfo> getNearbyAttractions(@RequestParam String userName) {
+//        logger.info("Received /getNearbyAttractions about {}", userName);
+//        VisitedLocation visitedLocation = tourGuideService.getUserLocation(getUser(userName));
+//        logger.info("getNearbyAttractions --> VisitedLocation of {} : lat = {} / long = {}", userName, visitedLocation.location.latitude, visitedLocation.location.longitude);
+//        List<AttractionInfo> attractionsOf = tourGuideService.getNearByAttractions(visitedLocation);
+//        logger.info("getNearbyAttractions --> There is {} attractions near {} ", attractionsOf.size(), userName);
+//        return attractionsOf;
+//    }
+    // NOTE 250623 : Change de méthode pour implémenter les nouveautés
+
     @RequestMapping("/getNearbyAttractions")
-    public List<Attraction> getNearbyAttractions(@RequestParam String userName) {
+    public List<AttractionInfo> getNearbyAttractions(@RequestParam String userName) {
         logger.info("Received /getNearbyAttractions about {}", userName);
         VisitedLocation visitedLocation = tourGuideService.getUserLocation(getUser(userName));
         logger.info("getNearbyAttractions --> VisitedLocation of {} : lat = {} / long = {}", userName, visitedLocation.location.latitude, visitedLocation.location.longitude);
-        List<Attraction> attractionsOf = tourGuideService.getNearByAttractions(visitedLocation);
-        logger.info("getNearbyAttractions --> There is {} attractions near {} ", attractionsOf.size(), userName);
+        List<AttractionInfo> attractionsOf = tourGuideService.getTop5Attractions(visitedLocation);
+        logger.info("getNearbyAttractions --> getTop5Attractions(visitedLocation)");
+        int i=1;
+        for (AttractionInfo attractionInfo : attractionsOf) {
+            logger.info("{} - attractionInfo = {}", i++, attractionInfo.getAttractionName());
+        }
         return attractionsOf;
     }
 
-    /** GET request that return a list of UserReward (VisitedLocation, Attraction, rewardPoints) of a userName
+    /** GET request that return a list of UserReward (VisitedLocation, AttractionInfo, rewardPoints) of a userName
      *
      * @param userName string of the userName
      * @return a list of {@link UserReward} of the userName requested

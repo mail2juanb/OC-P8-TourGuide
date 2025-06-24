@@ -2,6 +2,7 @@ package com.openclassrooms.tourguide.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -62,7 +63,7 @@ public class RewardsService {
 			}
 		}
 	}
-	
+
 	public boolean isWithinAttractionProximity(Attraction attraction, Location location) {
 		return getDistance(attraction, location) > attractionProximityRange ? false : true;
 	}
@@ -70,11 +71,16 @@ public class RewardsService {
 	private boolean nearAttraction(VisitedLocation visitedLocation, Attraction attraction) {
 		return getDistance(attraction, visitedLocation.location) > proximityBuffer ? false : true;
 	}
-	
+
 	private int getRewardPoints(Attraction attraction, User user) {
 		return rewardsCentral.getAttractionRewardPoints(attraction.attractionId, user.getUserId());
 	}
-	
+
+	// NOTE 250620 : Création de la méthode. Plus simple d'utiliser directement l'UUID
+	public int getRewardPoints(Attraction attraction, UUID userId) {
+		return rewardsCentral.getAttractionRewardPoints(attraction.attractionId, userId);
+	}
+
 	public double getDistance(Location loc1, Location loc2) {
 
 		// NOTE 250617 : Mettre en cache dans un ConcurrentHashMap.

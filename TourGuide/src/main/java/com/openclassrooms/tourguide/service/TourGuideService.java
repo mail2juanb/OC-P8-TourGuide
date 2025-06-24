@@ -1,5 +1,6 @@
 package com.openclassrooms.tourguide.service;
 
+import com.openclassrooms.tourguide.attraction.AttractionInfo;
 import com.openclassrooms.tourguide.helper.InternalTestHelper;
 import com.openclassrooms.tourguide.tracker.Tracker;
 import com.openclassrooms.tourguide.user.User;
@@ -7,23 +8,16 @@ import com.openclassrooms.tourguide.user.UserReward;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import gpsUtil.location.Attraction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import gpsUtil.GpsUtil;
-import gpsUtil.location.Attraction;
 import gpsUtil.location.Location;
 import gpsUtil.location.VisitedLocation;
 
@@ -109,7 +103,7 @@ public class TourGuideService {
 		logger.info("Method trackUserLocation --> getUserLocation of {} ({}) is : lat = {} / long = {}", user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
 		user.addToVisitedLocations(visitedLocation);
 		logger.info("Method trackUserLocation --> {} visited {} locations", user.getUserName(), user.getVisitedLocations().size());
-		// FIXME 250623 : Pourquoi on déclenche calculateRewards ici ???? Remplir le UserReward ? Pas besoin ici!
+		// FIXME 250623 : Pourquoi on déclenche calculateRewards ici ???? Remplir le UserReward ?
 		rewardsService.calculateRewards(user);
 		return visitedLocation;
 	}
@@ -123,6 +117,89 @@ public class TourGuideService {
 		}
 
 		return nearbyAttractions;
+	}
+
+
+	// NOTE 250623 : Cette méthode remplace getNearByAttractions car la demande client a évoluée
+	//  Instead: Get the closest five tourist attractions to the user - no matter how far away they are.
+	public List<AttractionInfo> getTop5Attractions(VisitedLocation visitedLocation) {
+		logger.info("Method getTop5Attractions of {}", visitedLocation.userId);
+
+		// NOTE 250623 : Récupère les attractions
+		logger.info("Method getTop5Attractions --> Récupère les attractions");
+		List<Attraction> attractions = gpsUtil.getAttractions();
+		if (attractions.isEmpty()) {
+			logger.info("Method getTop5Attractions --> Aucune attraction récupérée");
+		} else {
+			logger.info("Method getTop5Attractions --> {} attractions récupérées", attractions.size());
+		}
+
+		// NOTE 250623 : Calcul de la distance entre l'utilisateur et chaque attraction
+		logger.info("Method getTop5Attractions --> Calcul de la distance entre l'utilisateur et les attractions");
+		Map<String, Double> mapDistance = new HashMap<>();
+		for (Attraction attraction : attractions) {
+			Location attractionLocation = new Location(attraction.latitude, attraction.longitude);
+			mapDistance.put(attraction.attractionName, rewardsService.getDistance(visitedLocation.location, attractionLocation));
+		}
+
+		// NOTE 250423 : Trie des attractions par distance, de la plus petite à la plus grande
+		logger.info("Method getTop5Attractions --> Trie les entrées de la liste");
+		List<Map.Entry<String, Double>> distanceSort = new ArrayList<>(mapDistance.entrySet());
+		distanceSort.sort(Map.Entry.comparingByValue());
+
+		// NOTE 250623 : Filtre les 5 attractions les plus proches
+		logger.info("Method getTop5Attractions --> Filtre les 5 attractions les plus proches");
+		List<Map.Entry<String, Double>> distanceSortLimit = distanceSort.stream().limit(5).toList();
+		for (Map.Entry<String, Double> entry : distanceSortLimit) {
+			logger.info("Method getTop5Attractions --> AttractionName = {} // Distance = {}", entry.getKey(), entry.getValue());
+		}
+
+		// NOTE 250623 : création de la liste des 5 attractions les plus proches
+		logger.info("Method getTop5Attractions --> Création de la liste des 5 attractions les plus proches");
+		List<String> attractionNameSelected = distanceSortLimit.stream()
+				.map(Map.Entry::getKey)
+				.toList();
+		List<Attraction> topFiveAttractionsNear = attractionNameSelected.stream()
+				.map(name -> attractions.stream()
+						.filter(attraction -> attraction.attractionName.equals(name))
+						.findFirst()
+						.orElse(null))
+				.filter(Objects::nonNull)
+				.toList();
+		int i = 1;
+		for (Attraction att : topFiveAttractionsNear) {
+			logger.info("Method getTop5Attractions --> {} - Attraction Selected = {}", i++, att.attractionName);
+		}
+
+		// NOTE 250623 : Récupère les RewardPoints des Attractions selected
+		logger.info("Method getTop5Attractions --> Récupère les RewardPoints des Attractions sélectionnées ");
+		Map<String, Integer> attractionRewardPoints = new HashMap<>();
+		for (Attraction att : topFiveAttractionsNear) {
+			attractionRewardPoints.put(att.attractionName, rewardsService.getRewardPoints(att, visitedLocation.userId));
+		}
+		for (Map.Entry<String, Integer> attRP : attractionRewardPoints.entrySet()) {
+			logger.info("Method getTop5Attractions --> AttractionName = {} // RewardPoints = {}", attRP.getKey(), attRP.getValue());
+		}
+
+		// NOTE 250620 : Transforme la List<HashMap> en HashMap pour l'utiliser dans la construction de
+		Map<String, Double> mapDistanceSortedLimit = distanceSortLimit.stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+		// NOTE 250623 : création de la liste des 5 AttractionInfo les plus proches de l'utilisateur
+		List<AttractionInfo> attractionInfoList = new ArrayList<>();
+		for (Attraction att : topFiveAttractionsNear) {
+			AttractionInfo attractionInfo = new AttractionInfo(
+					att.attractionName,
+					att.latitude,
+					att.longitude,
+					visitedLocation.location.latitude,
+					visitedLocation.location.longitude,
+					mapDistanceSortedLimit.get(att.attractionName),
+					attractionRewardPoints.get(att.attractionName)
+			);
+			attractionInfoList.add(attractionInfo);
+		}
+
+		return attractionInfoList;
 	}
 
 	private void addShutDownHook() {
