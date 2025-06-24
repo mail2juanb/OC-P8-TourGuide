@@ -17,7 +17,10 @@ import com.openclassrooms.tourguide.user.User;
 public class Tracker extends Thread {
 	private Logger logger = LoggerFactory.getLogger(Tracker.class);
 	private static final long trackingPollingInterval = TimeUnit.MINUTES.toSeconds(5);
-	private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+
+	// NOTE 250624 : Modification pour passer a un thread(16) plus performant
+//	private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+	private final ExecutorService executorService = Executors.newFixedThreadPool(16);
 	private final TourGuideService tourGuideService;
 	private boolean stop = false;
 

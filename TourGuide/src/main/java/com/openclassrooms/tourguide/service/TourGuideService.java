@@ -31,7 +31,7 @@ import tripPricer.TripPricer;
 public class TourGuideService {
 	private Logger logger = LoggerFactory.getLogger(TourGuideService.class);
 	// NOTE 250624 : Pool de thread
-	private final Executor executor = Executors.newFixedThreadPool(8);
+	private final Executor executor = Executors.newFixedThreadPool(16);
 	private final GpsUtil gpsUtil;
 	private final RewardsService rewardsService;
 	private final TripPricer tripPricer = new TripPricer();
@@ -127,6 +127,7 @@ public class TourGuideService {
 
 	}
 
+	// NOTE 250623 : Cette méthode est remplacée par getTop5Attractions
 	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
 		List<Attraction> nearbyAttractions = new ArrayList<>();
 		for (Attraction attraction : gpsUtil.getAttractions()) {
