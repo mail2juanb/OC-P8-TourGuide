@@ -20,7 +20,7 @@ public class Tracker extends Thread {
 
 	// NOTE 250624 : Modification pour passer a un thread(16) plus performant
 //	private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-	private final ExecutorService executorService = Executors.newFixedThreadPool(16);
+	private final ExecutorService executorService = Executors.newFixedThreadPool(64);
 	private final TourGuideService tourGuideService;
 	private boolean stop = false;
 

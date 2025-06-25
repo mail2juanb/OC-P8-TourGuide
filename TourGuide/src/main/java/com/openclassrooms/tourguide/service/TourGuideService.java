@@ -31,7 +31,7 @@ import tripPricer.TripPricer;
 public class TourGuideService {
 	private Logger logger = LoggerFactory.getLogger(TourGuideService.class);
 	// NOTE 250624 : Pool de thread
-	private final Executor executor = Executors.newFixedThreadPool(16);
+	private final Executor executor = Executors.newFixedThreadPool(64);
 	private final GpsUtil gpsUtil;
 	private final RewardsService rewardsService;
 	private final TripPricer tripPricer = new TripPricer();
@@ -115,20 +115,20 @@ public class TourGuideService {
 
 	public CompletableFuture<VisitedLocation> trackUserLocation(User user) {
 		return CompletableFuture.supplyAsync(() -> {
-			logger.info("Method trackUserLocation of {}", user.getUserName());
+			//logger.info("Method trackUserLocation of {}", user.getUserName());
 			return gpsUtil.getUserLocation(user.getUserId());
 		}, executor).thenApply(visitedLocation -> {
 			user.addToVisitedLocations(visitedLocation);
-			logger.info("Method trackUserLocation --> getUserLocation of {} ({}) is : lat = {} / long = {}",
-					user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
+			//logger.info("Method trackUserLocation --> getUserLocation of {} ({}) is : lat = {} / long = {}",
+			//		user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
 			return visitedLocation;
 		}).thenCompose(visitedLocation -> {
 			return CompletableFuture.runAsync(() -> {
 				rewardsService.calculateRewards(user);
 			}, executor).thenApply(v -> visitedLocation);
 		}).thenApply(visitedLocation -> {
-			logger.info("Method trackUserLocation --> {} visited {} locations",
-					user.getUserName(), user.getVisitedLocations().size());
+			//logger.info("Method trackUserLocation --> {} visited {} locations",
+			//		user.getUserName(), user.getVisitedLocations().size());
 			return visitedLocation;
 		});
 	}

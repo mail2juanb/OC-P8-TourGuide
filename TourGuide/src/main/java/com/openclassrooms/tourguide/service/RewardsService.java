@@ -27,7 +27,6 @@ public class RewardsService {
 	private final GpsUtil gpsUtil;
 	private final RewardCentral rewardsCentral;
 	// NOTE 250618 : Ajout d'une ConcurrentHashMap pour stocker des infos redondantes en cache (thread-safe)
-	// FIXME 250624 : Je pense que ce n'est pas la bonne idée. Les anciennes locations sont déjà stockées dans les VisitedLocation.
 	private final Map<String, Double> distanceCache = new ConcurrentHashMap<>();
 
 
