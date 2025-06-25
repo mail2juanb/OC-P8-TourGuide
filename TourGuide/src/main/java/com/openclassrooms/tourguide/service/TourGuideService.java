@@ -116,15 +116,21 @@ public class TourGuideService {
 	public CompletableFuture<VisitedLocation> trackUserLocation(User user) {
 		return CompletableFuture.supplyAsync(() -> {
 			logger.info("Method trackUserLocation of {}", user.getUserName());
-			VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
-			logger.info("Method trackUserLocation --> getUserLocation of {} ({}) is : lat = {} / long = {}", user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
+			return gpsUtil.getUserLocation(user.getUserId());
+		}, executor).thenApply(visitedLocation -> {
 			user.addToVisitedLocations(visitedLocation);
-			logger.info("Method trackUserLocation --> {} visited {} locations", user.getUserName(), user.getVisitedLocations().size());
-			// NOTE 250624 : Pourquoi on déclenche calculateRewards ici ???? On renvoi un VisitedLocation (userId, location, timeVisited).
-			rewardsService.calculateRewards(user);
-			return visitedLocation;},
-		executor);
-
+			logger.info("Method trackUserLocation --> getUserLocation of {} ({}) is : lat = {} / long = {}",
+					user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
+			return visitedLocation;
+		}).thenCompose(visitedLocation -> {
+			return CompletableFuture.runAsync(() -> {
+				rewardsService.calculateRewards(user);
+			}, executor).thenApply(v -> visitedLocation);
+		}).thenApply(visitedLocation -> {
+			logger.info("Method trackUserLocation --> {} visited {} locations",
+					user.getUserName(), user.getVisitedLocations().size());
+			return visitedLocation;
+		});
 	}
 
 	// NOTE 250623 : Cette méthode est remplacée par getTop5Attractions

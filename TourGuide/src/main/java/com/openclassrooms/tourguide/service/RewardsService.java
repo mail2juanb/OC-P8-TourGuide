@@ -52,17 +52,28 @@ public class RewardsService {
 		List<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
 		List<Attraction> attractions = gpsUtil.getAttractions();
 
-		for(VisitedLocation visitedLocation : userLocations) {
-			for(Attraction attraction : attractions) {
-				// NOTE 250623 : Ré-écriture pour meilleure compréhension
-//				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
-				if (user.getUserRewards().stream().noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))) {
-					if(nearAttraction(visitedLocation, attraction)) {
+		// NOTE 250624 : Ré-écriture pour ajouter un parallelStream pour traiter les VisitedLocation
+//		for(VisitedLocation visitedLocation : userLocations) {
+//			for(Attraction attraction : attractions) {
+//				// NOTE 250623 : Ré-écriture pour meilleure compréhension
+////				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
+//				if (user.getUserRewards().stream().noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))) {
+//					if(nearAttraction(visitedLocation, attraction)) {
+//						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+//					}
+//				}
+//			}
+//		}
+		userLocations.parallelStream().forEach(visitedLocation -> {
+			attractions.stream()
+					.filter(attraction ->
+							user.getUserRewards().stream()
+									.noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName)))
+					.filter(attraction -> nearAttraction(visitedLocation, attraction))
+					.forEach(attraction -> {
 						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
-					}
-				}
-			}
-		}
+					});
+		});
 	}
 
 	public boolean isWithinAttractionProximity(Attraction attraction, Location location) {
