@@ -7,7 +7,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
+import com.openclassrooms.tourguide.user.UserReward;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.jupiter.api.Test;
 
@@ -68,6 +70,8 @@ public class TestPerformance {
 	 * TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
 	 */
 
+	final int NUM_USERS = 1_000;
+
 
 	// NOTE 250618 : Le test était désactivé lorsque j'ai récupéré l'application
 	//@Disabled
@@ -75,7 +79,7 @@ public class TestPerformance {
 	public void highVolumeTrackLocation() {
 
 		// 250618 NOTE : Constante pour gérer les différents cas
-		final int NUM_USERS = 100;
+//		final int NUM_USERS = 1_000;
 		final int TIME_THRESHOLD_SECONDS = 900;  // 900s = 15min
 
 		// NOTE 250624 : Implémentation du CompletableFuture sur trackUserLocation
@@ -121,7 +125,7 @@ public class TestPerformance {
 	public void highVolumeGetRewards() {
 
 		// 250618 NOTE : Constante pour gérer les différents cas
-		final int NUM_USERS = 100;
+//		final int NUM_USERS = 1_000;
 		final int TIME_THRESHOLD_SECONDS = 1200;  // 1200s = 20min
 
 
@@ -137,13 +141,22 @@ public class TestPerformance {
 
 		Attraction attraction = gpsUtil.getAttractions().get(0);
 		List<User> allUsers = tourGuideService.getAllUsers();
+
 		allUsers.forEach(u -> u.addToVisitedLocations(new VisitedLocation(u.getUserId(), attraction, new Date())));
 
-		allUsers.forEach(u -> rewardsService.calculateRewards(u));
+		// NOTE 250626 : Modification de la méthode pour utiliser CompletableFuture pour traiter les utilisateurs en parallèle
+//		allUsers.forEach(u -> rewardsService.calculateRewards(u));
+		List<CompletableFuture<Void>> futures = allUsers.stream()
+				.map(rewardsService::calculateRewardsASync)
+				.toList();
+
+		CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+		allFutures.join();
 
 		for (User user : allUsers) {
 			assertTrue(user.getUserRewards().size() > 0);
 		}
+
 		stopWatch.stop();
 		tourGuideService.tracker.stopTracking();
 

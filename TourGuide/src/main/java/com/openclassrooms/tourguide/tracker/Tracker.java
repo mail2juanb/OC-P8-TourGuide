@@ -19,8 +19,8 @@ public class Tracker extends Thread {
 	private static final long trackingPollingInterval = TimeUnit.MINUTES.toSeconds(5);
 
 	// NOTE 250624 : Modification pour passer a un thread(16) plus performant
-//	private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-	private final ExecutorService executorService = Executors.newFixedThreadPool(64);
+	private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+//	private final ExecutorService executorService = Executors.newFixedThreadPool();
 	private final TourGuideService tourGuideService;
 	private boolean stop = false;
 

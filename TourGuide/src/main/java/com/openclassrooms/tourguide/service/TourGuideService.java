@@ -30,8 +30,8 @@ import tripPricer.TripPricer;
 @Service
 public class TourGuideService {
 	private Logger logger = LoggerFactory.getLogger(TourGuideService.class);
-	// NOTE 250624 : Pool de thread
-	private final Executor executor = Executors.newFixedThreadPool(64);
+	// NOTE 250624 : Pool de thread pour l'utilisation de la classe CompletableFuture
+	private final Executor executor = Executors.newFixedThreadPool(52);
 	private final GpsUtil gpsUtil;
 	private final RewardsService rewardsService;
 	private final TripPricer tripPricer = new TripPricer();
@@ -123,9 +123,11 @@ public class TourGuideService {
 			//		user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
 			return visitedLocation;
 		}).thenCompose(visitedLocation -> {
-			return CompletableFuture.runAsync(() -> {
-				rewardsService.calculateRewards(user);
-			}, executor).thenApply(v -> visitedLocation);
+//			return CompletableFuture.runAsync(() -> {
+//				rewardsService.calculateRewards(user);
+//			}, executor).thenApply(v -> visitedLocation);
+			// Remplacez calculateRewards par calculateRewardsAsync
+			return rewardsService.calculateRewardsASync(user).thenApply(v -> visitedLocation);
 		}).thenApply(visitedLocation -> {
 			//logger.info("Method trackUserLocation --> {} visited {} locations",
 			//		user.getUserName(), user.getVisitedLocations().size());

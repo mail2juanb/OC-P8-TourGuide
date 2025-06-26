@@ -62,10 +62,19 @@ public class TestRewardsService {
 
 		InternalTestHelper.setInternalUserNumber(1);
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
+		// NOTE 250626 : Code déplacé
+		//tourGuideService.tracker.stopTracking();
 
-		rewardsService.calculateRewards(tourGuideService.getAllUsers().get(0));
+		// NOTE 250626 : Utilisation de calculateRewardsAsync et attente de la fin de l'exécution
+		//rewardsService.calculateRewards(tourGuideService.getAllUsers().get(0));
+		rewardsService.calculateRewardsASync(tourGuideService.getAllUsers().get(0)).join();
+
 		List<UserReward> userRewards = tourGuideService.getUserRewards(tourGuideService.getAllUsers().get(0));
+		// NOTE 250626 : Code déplacé au-dessus
 		tourGuideService.tracker.stopTracking();
+
+//		System.out.println("gpsUtil.getAttractions().size() = " + gpsUtil.getAttractions().size());
+//		System.out.println("userRewards.size() = " + userRewards.size());
 
 		assertEquals(gpsUtil.getAttractions().size(), userRewards.size());
 	}
