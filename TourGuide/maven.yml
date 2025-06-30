@@ -41,10 +41,9 @@ jobs:
         run: mvn test
 
       - name: Build with Maven
-        if: success()  # Cette étape ne s'exécute que si l'étape précédente réussit
+        if: success()
         run: mvn -B package --file pom.xml
 
       - name: Notify on test failure
         if: failure()
         run: echo "Les tests ont échoué, l'artefact ne sera pas construit."
-
