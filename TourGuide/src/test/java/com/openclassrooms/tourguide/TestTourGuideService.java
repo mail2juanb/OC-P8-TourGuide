@@ -18,6 +18,7 @@ import com.openclassrooms.tourguide.service.TourGuideService;
 import com.openclassrooms.tourguide.user.User;
 import tripPricer.Provider;
 
+
 public class TestTourGuideService {
 
 	@Test
@@ -29,11 +30,6 @@ public class TestTourGuideService {
 
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
 
-//		VisitedLocation visitedLocation = tourGuideService.trackUserLocation(user);
-		// NOTE 250624 : Modification suite à l'implémentation de CompletableFuture
-//		CompletableFuture<VisitedLocation> visitedLocationFuture = tourGuideService.trackUserLocation(user);
-//		VisitedLocation visitedLocation = visitedLocationFuture.join();
-		// NOTE 250627 : Retour à l'original car suppression du completablefuture
 		VisitedLocation visitedLocation = tourGuideService.trackUserLocation(user);
 
 		tourGuideService.tracker.stopTracking();
@@ -92,11 +88,6 @@ public class TestTourGuideService {
 
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
 
-//		VisitedLocation visitedLocation = tourGuideService.trackUserLocation(user);
-		// NOTE 250624 : Modification suite à l'implémentation de CompletableFuture
-//		CompletableFuture<VisitedLocation> visitedLocationFuture = tourGuideService.trackUserLocation(user);
-//		VisitedLocation visitedLocation = visitedLocationFuture.join();
-		// NOTE 250627 : Retour à l'original car suppression du completablefuture
 		VisitedLocation visitedLocation = tourGuideService.trackUserLocation(user);
 
 		tourGuideService.tracker.stopTracking();
@@ -116,11 +107,6 @@ public class TestTourGuideService {
 
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
 
-//		VisitedLocation visitedLocation = tourGuideService.trackUserLocation(user);
-		// NOTE 250624 : Modification suite à l'implémentation de CompletableFuture
-//		CompletableFuture<VisitedLocation> visitedLocationFuture = tourGuideService.trackUserLocation(user);
-//		VisitedLocation visitedLocation = visitedLocationFuture.join();
-		// NOTE 250627 : Retour à l'original car suppression du completablefuture
 		VisitedLocation visitedLocation = tourGuideService.trackUserLocation(user);
 
 		// NOTE 250624 : Utilisation de la nouvelle méthode
