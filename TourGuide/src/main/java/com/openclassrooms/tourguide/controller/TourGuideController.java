@@ -59,7 +59,7 @@ public class TourGuideController {
         return getLocationOf;
     }
 
-    //  TODO: Change this method to no longer return a List of Attractions.
+    //  NOTE: Change this method to no longer return a List of Attractions.
     //  Instead: Get the closest five tourist attractions to the user - no matter how far away they are.
     //  Return a new JSON object that contains:
     // Name of Tourist attraction,
@@ -68,17 +68,8 @@ public class TourGuideController {
     // The distance in miles between the user's location and each of the attractions.
     // The reward points for visiting each Attraction.
     //    Note: Attraction reward points can be gathered from RewardsCentral
-//    @RequestMapping("/getNearbyAttractions")
-//    public List<AttractionDTO> getNearbyAttractions(@RequestParam String userName) {
-//        logger.info("Received /getNearbyAttractions about {}", userName);
-//        VisitedLocation visitedLocation = tourGuideService.getUserLocation(getUser(userName));
-//        logger.info("getNearbyAttractions --> VisitedLocation of {} : lat = {} / long = {}", userName, visitedLocation.location.latitude, visitedLocation.location.longitude);
-//        List<AttractionDTO> attractionsOf = tourGuideService.getNearByAttractions(visitedLocation);
-//        logger.info("getNearbyAttractions --> There is {} attractions near {} ", attractionsOf.size(), userName);
-//        return attractionsOf;
-//    }
-    // NOTE 250623 : Change de méthode pour implémenter les nouveautés
 
+    // NOTE 250623 : Change de méthode pour implémenter les nouveautés
     @RequestMapping("/getNearbyAttractions")
     public List<AttractionDTO> getNearbyAttractions(@RequestParam String userName) {
         logger.info("Received /getNearbyAttractions about {}", userName);

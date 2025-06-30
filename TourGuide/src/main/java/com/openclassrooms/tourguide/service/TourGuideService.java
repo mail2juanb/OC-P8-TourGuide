@@ -154,12 +154,12 @@ public class TourGuideService {
 				.map(AttractionWithDistance::attraction)
 				.toList();
 
-		// Log les attractions sélectionnées
+		// NOTE 250630 : Log les attractions sélectionnées
 		IntStream.range(0, topFiveAttractionsNear.size()).forEach(i -> {
 			Attraction att = topFiveAttractionsNear.get(i);
 		});
 
-		// Get reward points for the selected attractions and create AttractionInfo list
+		// NOTE 250630 : Get reward points for the selected attractions and create AttractionDTO list
 		List<AttractionDTO> attractionInfoList = topFiveAttractionsNear.stream()
 				.map(att -> {
 					Location attractionLocation = new Location(att.latitude, att.longitude);
