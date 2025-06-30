@@ -1,23 +1,21 @@
 package com.openclassrooms.tourguide;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import com.openclassrooms.tourguide.user.UserReward;
 import org.apache.commons.lang3.time.StopWatch;
-import org.junit.jupiter.api.Test;
 
 import gpsUtil.GpsUtil;
 import gpsUtil.location.Attraction;
 import gpsUtil.location.VisitedLocation;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import rewardCentral.RewardCentral;
 import com.openclassrooms.tourguide.helper.InternalTestHelper;
 import com.openclassrooms.tourguide.service.RewardsService;
@@ -49,49 +47,20 @@ public class TestPerformance {
 	 * TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
 	 */
 
-	/*
-	 * Remarque sur les améliorations de performances :
-	 *
-	 * Le nombre d'utilisateurs générés pour les tests à haut volume peut être facilement
-	 * ajusté à l'aide de cette méthode :
-	 *
-	 * InternalTestHelper.setInternalUserNumber(100000);
-	 *
-	 *
-	 * Ces tests peuvent être modifiés pour s'adapter à de nouvelles solutions, à condition que
-	 * les mesures de performance à la fin des tests restent cohérentes.
-	 *
-	 * Voici les mesures de performance que nous essayons d'atteindre :
-	 *
-	 * highVolumeTrackLocation : 100 000 utilisateurs en 15 minutes :
-	 * assertTrue(TimeUnit.MINUTES.toSeconds(15) >=
-	 * TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
-	 *
-	 * highVolumeGetRewards : 100 000 utilisateurs en 20 minutes :
-	 * assertTrue(TimeUnit.MINUTES.toSeconds(20) >=
-	 * TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
-	 */
-
-	final int NUM_USERS = 1_000;
 
 
 	// NOTE 250618 : Le test était désactivé lorsque j'ai récupéré l'application
 	//@Disabled
-	@Test
-	public void highVolumeTrackLocation() {
-
-		// 250618 NOTE : Constante pour gérer les différents cas
-//		final int NUM_USERS = 1_000;
-		final int TIME_THRESHOLD_SECONDS = 900;  // 900s = 15min
-
-		// NOTE 250624 : Implémentation du CompletableFuture sur trackUserLocation
-		List<CompletableFuture<VisitedLocation>> futures = new ArrayList<>();
-
+	//@Test
+	// NOTE 250630 : Modification en Parametrized Test pour tester la charge avec un nombre croissant de User
+	@ParameterizedTest(name = "Test with {0} users and a time threshold of {1} seconds")
+	@MethodSource("provideUsersForTrackLocation")
+	public void highVolumeTrackLocation(int numUsers, int timeThresholdSeconds) {
 
 		GpsUtil gpsUtil = new GpsUtil();
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
 		// Users should be incremented up to 100,000, and test finishes within 15 minutes
-		InternalTestHelper.setInternalUserNumber(NUM_USERS);
+		InternalTestHelper.setInternalUserNumber(numUsers);
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
 		List<User> allUsers = tourGuideService.getAllUsers();
@@ -100,15 +69,8 @@ public class TestPerformance {
 		stopWatch.start();
 
 //		for (User user : allUsers) {
-//			// NOTE 250624 : Implémentation du CompletableFuture sur trackUserLocation
-//			CompletableFuture<VisitedLocation> future = tourGuideService.trackUserLocation(user);
-//			futures.add(future);
+//			tourGuideService.trackUserLocation(user);
 //		}
-//
-//		// NOTE 250624 : Implémentation du CompletableFuture sur trackUserLocation - Attendre que toutes les futures soient complétées
-//		CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-//		allFutures.join();
-
 		// NOTE 250627 : Changement de fonctionnement, utilisation de la méthode qui gère les listes
 		tourGuideService.trackAllUsersLocation(allUsers);
 
@@ -120,75 +82,35 @@ public class TestPerformance {
 
 		// NOTE 250618 : J'ai changé le code pour passer en secondes. C'est mieux d'avoir toujours la même unité
 //		assertTrue(TimeUnit.MINUTES.toSeconds(75) >= TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
-		assertTrue(TIME_THRESHOLD_SECONDS >= TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
+		assertTrue(timeThresholdSeconds >= TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
+	}
+
+	private static Stream<Arguments> provideUsersForTrackLocation() {
+		return Stream.of(
+				Arguments.of(100, 10),
+				Arguments.of(1_000, 50),
+				Arguments.of(5_000, 100),
+				Arguments.of(10_000, 200),
+				Arguments.of(50_000, 500),
+				Arguments.of(100_000, 900)
+		);
 	}
 
 
+
 	// NOTE 250618 : Le test était désactivé lorsque j'ai récupéré l'application
-	//@Disabled
-//	@Test
-//	public void highVolumeGetRewards() {
-//
-//		// 250618 NOTE : Constante pour gérer les différents cas
-////		final int NUM_USERS = 1_000;
-//		final int TIME_THRESHOLD_SECONDS = 1200;  // 1200s = 20min
-//
-//
-//		GpsUtil gpsUtil = new GpsUtil();
-//		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
-//
-//		// Users should be incremented up to 100,000, and test finishes within 20 minutes
-//		InternalTestHelper.setInternalUserNumber(NUM_USERS);
-//		StopWatch stopWatch = new StopWatch();
-//		stopWatch.start();
-//		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
-//
-//		Attraction attraction = gpsUtil.getAttractions().get(0);
-//		List<User> allUsers = tourGuideService.getAllUsers();
-//
-//		//	allUsers.forEach(u -> u.addToVisitedLocations(new VisitedLocation(u.getUserId(), attraction, new Date())));
-//
-//		//Create an executor service with a thread pool of certain amount of threads
-//		try {
-//			ExecutorService executorService = Executors.newFixedThreadPool(100);
-//
-//			//Execute the code as per in the method "trackUserLocation" in TourGuideService
-//			for (User user : allUsers) {
-//				Runnable runnable = () -> {
-//					user.addToVisitedLocations(new VisitedLocation(user.getUserId(), attraction, new Date()));
-//					//tourGuideService.trackUserLocation(user);
-//					rewardsService.calculateRewards(user);
-//					assertTrue(user.getUserRewards().size() > 0);
-//				};
-//				executorService.execute(runnable);
-//			}
-//			executorService.shutdown();
-//			executorService.awaitTermination(15, TimeUnit.MINUTES);
-//
-//		} catch (InterruptedException interruptedException) {
-//		}
-//
-//		stopWatch.stop();
-//
-//		//Asserting part that the time is as performant as wanted
-//		System.out.println("highVolumeGetRewards: Time Elapsed: " + TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()) + " seconds.");
-//		assertTrue(TIME_THRESHOLD_SECONDS >= TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
-//	}
-
 	// NOTE 250627 : Modification de la méthode pour travailler sur la méthode qui gère les listes
-	@Test
-	public void highVolumeGetRewards() {
-
-		// 250618 NOTE : Constante pour gérer les différents cas
-//		final int NUM_USERS = 1_000;
-		final int TIME_THRESHOLD_SECONDS = 1200;  // 1200s = 20min
-
+	//@Test
+	// NOTE 250630 : Modification en Parametrized Test pour tester la charge avec un nombre croissant de User
+	@ParameterizedTest(name = "Test with {0} users and a time threshold of {1} seconds")
+	@MethodSource("provideUsersForGetsRewards")
+	public void highVolumeGetRewards(int numUsers, int timeThresholdSeconds) {
 
 		GpsUtil gpsUtil = new GpsUtil();
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
 
 		// Users should be incremented up to 100,000, and test finishes within 20 minutes
-		InternalTestHelper.setInternalUserNumber(NUM_USERS);
+		InternalTestHelper.setInternalUserNumber(numUsers);
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
@@ -203,7 +125,9 @@ public class TestPerformance {
 		rewardsService.calculateAllUsersRewards(allUsers);
 
 		for (User user : allUsers) {
-			assertTrue(user.getUserRewards().size() > 0);
+//			assertTrue(user.getUserRewards().size() > 0);
+			// NOTE 250630 : Simplification de l'assertion
+            assertFalse(user.getUserRewards().isEmpty());
 		}
 
 		stopWatch.stop();
@@ -211,7 +135,16 @@ public class TestPerformance {
 
 		//Asserting part that the time is as performant as wanted
 		System.out.println("highVolumeGetRewards: Time Elapsed: " + TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()) + " seconds.");
-		assertTrue(TIME_THRESHOLD_SECONDS >= TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
+		assertTrue(timeThresholdSeconds >= TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
+	}
+
+	private static Stream<Arguments> provideUsersForGetsRewards() {
+		return Stream.of(
+				Arguments.of(100, 10),
+				Arguments.of(1_000, 100),
+				Arguments.of(10_000, 400),
+				Arguments.of(100_000, 1_200)
+		);
 	}
 
 }
