@@ -33,7 +33,7 @@ jobs:
 
       - name: Build with Maven
         if: success()
-        run: mvn -B package --file pom.xml
+        run: mvn -B package --file TourGuide/pom.xml
 
       - name: Notify on test failure
         if: failure()
