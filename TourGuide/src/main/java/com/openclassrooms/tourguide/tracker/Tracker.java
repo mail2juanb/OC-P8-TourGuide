@@ -51,13 +51,15 @@ public class Tracker extends Thread {
 			logger.debug("Begin Tracker. Tracking " + users.size() + " users.");
 			stopWatch.start();
 
-			// NOTE 250624 : Implémentation du CompletableFuture sur trackUserLocation
 //			users.forEach(u -> tourGuideService.trackUserLocation(u));
-			List<CompletableFuture<VisitedLocation>> futures = users.stream()
-							.map(tourGuideService::trackUserLocation)
-					        .toList();
-			CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-			allFutures.join();
+			// NOTE 250624 : Implémentation du CompletableFuture sur trackUserLocation
+//			List<CompletableFuture<VisitedLocation>> futures = users.stream()
+//							.map(tourGuideService::trackUserLocation)
+//					        .toList();
+//			CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+//			allFutures.join();
+			// NOTE 250627 : Retour à l'original
+			users.forEach(tourGuideService::trackUserLocation);
 
 			stopWatch.stop();
 			logger.debug("Tracker Time Elapsed: " + TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()) + " seconds.");

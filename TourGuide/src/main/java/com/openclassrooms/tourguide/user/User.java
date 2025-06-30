@@ -83,13 +83,9 @@ public class User {
 	public void addUserReward(UserReward userReward) {
 		// NOTE 250628 : Ré-écriture pour meilleure lisibilité
 //		if(userRewards.stream().filter(r -> !r.attraction.attractionName.equals(userReward.attraction)).count() == 0) {
-		// NOTE 250625 : Suppression de la condition, car vérifiée dans la méthode appelante : calculateRewards
 		if (userRewards.stream().noneMatch(r -> r.attraction.attractionName.equals(userReward.attraction.attractionName))) {
 			userRewards.add(userReward);
 		}
-		// NOTE 250625 : Cependant, si j'enlève la condition, alors le test nearAllAttractions n'est pas passant.
-		// NOTE 250626 : Je modifie le test
-//		userRewards.add(userReward);
 	}
 	
 	public List<UserReward> getUserRewards() {

@@ -34,10 +34,14 @@ public class TestRewardsService {
 		Attraction attraction = gpsUtil.getAttractions().get(0);
 		user.addToVisitedLocations(new VisitedLocation(user.getUserId(), attraction, new Date()));
 
-		// NOTE 250624 : Implémentation du CompletableFuture sur trackUserLocation
 //		tourGuideService.trackUserLocation(user);
-		CompletableFuture<VisitedLocation> future = tourGuideService.trackUserLocation(user);
-		VisitedLocation visitedLocation = future.join();
+		// NOTE 250624 : Implémentation du CompletableFuture sur trackUserLocation
+
+//		CompletableFuture<VisitedLocation> future = tourGuideService.trackUserLocation(user);
+//		VisitedLocation visitedLocation = future.join();
+		// NOTE 250627 : Finalement j'ai changé de fonctionnement
+
+		tourGuideService.trackUserLocation(user);
 
 		List<UserReward> userRewards = user.getUserRewards();
 		tourGuideService.tracker.stopTracking();
@@ -65,9 +69,9 @@ public class TestRewardsService {
 		// NOTE 250626 : Code déplacé
 		//tourGuideService.tracker.stopTracking();
 
-		// NOTE 250626 : Utilisation de calculateRewardsAsync et attente de la fin de l'exécution
-		//rewardsService.calculateRewards(tourGuideService.getAllUsers().get(0));
-		rewardsService.calculateRewardsASync(tourGuideService.getAllUsers().get(0)).join();
+		// NOTE 250626 : Utilisation de calculateRewardsAsync et attente de la fin de l'exécution - finalement c'est mieux sans le ASync
+		rewardsService.calculateRewards(tourGuideService.getAllUsers().get(0));
+//		rewardsService.calculateRewardsASync(tourGuideService.getAllUsers().get(0)).join();
 
 		List<UserReward> userRewards = tourGuideService.getUserRewards(tourGuideService.getAllUsers().get(0));
 		// NOTE 250626 : Code déplacé au-dessus

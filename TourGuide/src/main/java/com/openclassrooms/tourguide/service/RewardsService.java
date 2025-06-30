@@ -24,9 +24,9 @@ public class RewardsService {
 	private int attractionProximityRange = 200;
 	private final GpsUtil gpsUtil;
 	private final RewardCentral rewardsCentral;
-	// NOTE 250618 : Ajout d'une ConcurrentHashMap pour stocker des infos redondantes en cache (thread-safe)
-	//private final Map<String, Double> distanceCache = new ConcurrentHashMap<>();
-	private final Executor executor = Executors.newFixedThreadPool(48); // 49 thread => 12 secondes
+
+	// FIXME 250630 : Quelle valeur choisir, l'échelle est trop grande
+	private final ExecutorService executorService = Executors.newFixedThreadPool(400);
 
 
 	
@@ -45,28 +45,30 @@ public class RewardsService {
 
 
 	// NOTE 250626 : Cette méthode a été ré-écrite plus bas calculateRewardsASync
-//	public void calculateRewards(User user) {
+	public void calculateRewards(User user) {
 		// NOTE 250618 : Modification afin d'éviter l'erreur ConcurrentModificationException
 //		List<VisitedLocation> userLocations = user.getVisitedLocations();
-//		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
-//		List<Attraction> attractions = gpsUtil.getAttractions();
+		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
+		List<Attraction> attractions = gpsUtil.getAttractions();
 //		CopyOnWriteArrayList<Attraction> attractions = new CopyOnWriteArrayList<>(gpsUtil.getAttractions());
-//
-//
-//		// NOTE 250624 : Ré-écriture pour ajouter un parallelStream pour traiter les VisitedLocation
-//		// NOTE 250625 : Version originale			---		1000u -> 15s
-//		for (VisitedLocation visitedLocation : userLocations) {
-//			for (Attraction attraction : attractions) {
-//				// NOTE 250623 : Ré-écriture pour meilleure compréhension
-////				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
-//				if (user.getUserRewards().stream().noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))) {
-//					if (nearAttraction(visitedLocation, attraction)) {
-//						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
-//					}
-//				}
-//			}
-//		}
-//	}
+
+
+		// NOTE 250624 : Ré-écriture pour ajouter un parallelStream pour traiter les VisitedLocation
+		// NOTE 250625 : Version originale			---		1000u -> 15s
+		for (VisitedLocation visitedLocation : userLocations) {
+			for (Attraction attraction : attractions) {
+				// NOTE 250623 : Ré-écriture pour meilleure compréhension
+//				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
+				if (user.getUserRewards().stream().noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))) {
+					if (nearAttraction(visitedLocation, attraction)) {
+						UserReward reward = new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user));
+						user.addUserReward(reward);
+						//System.out.println(reward);
+					}
+				}
+			}
+		}
+	}
 
 		// NOTE 250625 : Version parallelStream sur la 1ere boucle			---		1000u -> 15s
 //		userLocations.parallelStream().forEach(visitedLocation -> {
@@ -180,38 +182,93 @@ public class RewardsService {
 //	}
 
 
-
-
-
 	// NOTE 250626 : Version avec CompletableFuture et parallelStream 			---		1000u -> 12s
-	public CompletableFuture<Void> calculateRewardsASync(User user) {
+//	public CompletableFuture<Void> calculateRewardsASync(User user) {
+//
+//		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
+//		List<Attraction> attractions = gpsUtil.getAttractions();
+//		//CopyOnWriteArrayList<Attraction> attractions = new CopyOnWriteArrayList<>(gpsUtil.getAttractions());
+//
+//		// Utiliser un Set concurrent pour garder une trace des récompenses
+//		Set<String> rewardedAttractions = Collections.newSetFromMap(new ConcurrentHashMap<>());
+//		user.getUserRewards().forEach(reward ->
+//				rewardedAttractions.add(reward.attraction.attractionName)
+//		);
+//
+//		// Utiliser CompletableFuture pour traiter les VisitedLocation en parallèle
+//		List<CompletableFuture<Void>> futures = userLocations.parallelStream().map(visitedLocation ->
+//				CompletableFuture.runAsync(() -> {
+//					attractions.forEach(attraction -> {
+//						// Vérifier si l'attraction a déjà une récompense et est proche
+//						String attractionName = attraction.attractionName;
+//						if (!rewardedAttractions.contains(attractionName) && nearAttraction(visitedLocation, attraction)) {
+//							// Ajouter une récompense à l'utilisateur
+//							user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+//							rewardedAttractions.add(attractionName);
+//						}
+//					});
+//				}, executor)
+//		).collect(Collectors.toList());
+//
+//		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+//	}
 
-		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
-		List<Attraction> attractions = gpsUtil.getAttractions();
-		//CopyOnWriteArrayList<Attraction> attractions = new CopyOnWriteArrayList<>(gpsUtil.getAttractions());
+	// NOTE 250627 : Changement du type de retour pour intégration dans la méthode calculateAllUserRewards
+//	public CompletableFuture<User> calculateUserRewards(User user) {
+//
+//		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
+//		List<Attraction> attractions = gpsUtil.getAttractions();
+//		Set<String> rewardedAttractions = Collections.newSetFromMap(new ConcurrentHashMap<>());
+//
+//		user.getUserRewards().forEach(reward ->
+//				rewardedAttractions.add(reward.attraction.attractionName)
+//		);
+//
+//		List<CompletableFuture<Void>> futures = userLocations.parallelStream().map(visitedLocation ->
+//				CompletableFuture.runAsync(() -> {
+//					attractions.forEach(attraction -> {
+//						String attractionName = attraction.attractionName;
+//						if (!rewardedAttractions.contains(attractionName) && nearAttraction(visitedLocation, attraction)) {
+//							user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+//							rewardedAttractions.add(attractionName);
+//						}
+//					});
+//				}, executor)
+//		).collect(Collectors.toList());
+//
+//		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+//				.thenApply(v -> user);
+//	}
 
-		// Utiliser un Set concurrent pour garder une trace des récompenses
-		Set<String> rewardedAttractions = Collections.newSetFromMap(new ConcurrentHashMap<>());
-		user.getUserRewards().forEach(reward ->
-				rewardedAttractions.add(reward.attraction.attractionName)
-		);
+	// NOTE 250627 : Nouvelle méthode pour gérer les listes de users
+//	public CompletableFuture<List<User>> calculateAllUsersRewards(List<User> users) {
+//		List<CompletableFuture<User>> userFutures = users.stream()
+//				.map(user -> calculateUserRewards(user))
+//				.collect(Collectors.toList());
+//
+//		CompletableFuture<Void> allFutures = CompletableFuture.allOf(
+//				userFutures.toArray(new CompletableFuture[0])
+//		);
+//
+//		return allFutures.thenApply(v ->
+//				userFutures.stream()
+//						.map(CompletableFuture::join)
+//						.collect(Collectors.toList())
+//		);
+//	}
 
-		// Utiliser CompletableFuture pour traiter les VisitedLocation en parallèle
-		List<CompletableFuture<Void>> futures = userLocations.parallelStream().map(visitedLocation ->
-				CompletableFuture.runAsync(() -> {
-					attractions.forEach(attraction -> {
-						// Vérifier si l'attraction a déjà une récompense et est proche
-						String attractionName = attraction.attractionName;
-						if (!rewardedAttractions.contains(attractionName) && nearAttraction(visitedLocation, attraction)) {
-							// Ajouter une récompense à l'utilisateur
-							user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
-							rewardedAttractions.add(attractionName);
-						}
-					});
-				}, executor)
-		).collect(Collectors.toList());
+	// NOTE 250627 : Nouvelle méthode qui gère les listes
+	public void calculateAllUsersRewards(List<User> users) {
 
-		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+		users.forEach(user -> executorService.submit(new Thread(() -> calculateRewards(user))));
+
+		executorService.shutdown();
+
+		try {
+			executorService.awaitTermination(20, TimeUnit.MINUTES);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public boolean isWithinAttractionProximity(Attraction attraction, Location location) {

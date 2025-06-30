@@ -31,7 +31,7 @@ import tripPricer.TripPricer;
 public class TourGuideService {
 	private Logger logger = LoggerFactory.getLogger(TourGuideService.class);
 	// NOTE 250624 : Pool de thread pour l'utilisation de la classe CompletableFuture
-	private final Executor executor = Executors.newFixedThreadPool(52);
+	private final Executor executor = Executors.newFixedThreadPool(32); // old=52
 	private final GpsUtil gpsUtil;
 	private final RewardsService rewardsService;
 	private final TripPricer tripPricer = new TripPricer();
@@ -65,16 +65,20 @@ public class TourGuideService {
 	 * @return {@link VisitedLocation} of the User requested
 	 */
 	public VisitedLocation getUserLocation(User user) {
-		logger.info("Method getUserLocation of {}", user.getUserName());
+		//logger.info("Method getUserLocation of {}", user.getUserName());
 		// NOTE 250623 : condition ré-écrite pour une meilleure lisibilité
 //		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation() : trackUserLocation(user);
 //		VisitedLocation visitedLocation = (user.getVisitedLocations().isEmpty()) ? trackUserLocation(user) : user.getLastVisitedLocation();
 		// NOTE 250624 : Modification de la méthode pour obtenir le résultat du Completable
-		VisitedLocation visitedLocation = (user.getVisitedLocations().isEmpty())
-				? trackUserLocation(user).join()
-				: user.getLastVisitedLocation();
-		logger.info("Method getUserLocation --> user.getVisitedLocations().isEmpty() = {}", user.getVisitedLocations().isEmpty());
-		logger.info("Method getUserLocation --> VisitedLocation of {} ({}) is : lat = {} / long = {}", user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
+//		VisitedLocation visitedLocation = (user.getVisitedLocations().isEmpty())
+//				? trackUserLocation(user).join()
+//				: user.getLastVisitedLocation();
+		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation()
+				: trackUserLocation(user);
+		// NOTE 250627 : Retour à l'original
+
+		//logger.info("Method getUserLocation --> user.getVisitedLocations().isEmpty() = {}", user.getVisitedLocations().isEmpty());
+		//logger.info("Method getUserLocation --> VisitedLocation of {} ({}) is : lat = {} / long = {}", user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
 		return visitedLocation;
 	}
 
@@ -102,38 +106,62 @@ public class TourGuideService {
 	}
 
 	// NOTE 250624 : Ré-écriture de cette méthode en implémentant la classe CompletableFuture afin de ne pas perdre de temps lors de l'appel à gpsUtil
-//	public VisitedLocation trackUserLocation(User user) {
-//		logger.info("Method trackUserLocation of {}", user.getUserName());
-//		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
-//		logger.info("Method trackUserLocation --> getUserLocation of {} ({}) is : lat = {} / long = {}", user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
-//		user.addToVisitedLocations(visitedLocation);
-//		logger.info("Method trackUserLocation --> {} visited {} locations", user.getUserName(), user.getVisitedLocations().size());
-//		// NOTE 250624 : Pourquoi on déclenche calculateRewards ici ???? On renvoi un VisitedLocation (userId, location, timeVisited).
-//		//rewardsService.calculateRewards(user);
-//		return visitedLocation;
-//	}
+	public VisitedLocation trackUserLocation(User user) {
+		//logger.info("Method trackUserLocation of {}", user.getUserName());
+		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
+		//logger.info("Method trackUserLocation --> getUserLocation of {} ({}) is : lat = {} / long = {}", user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
+		user.addToVisitedLocations(visitedLocation);
+		//logger.info("Method trackUserLocation --> {} visited {} locations", user.getUserName(), user.getVisitedLocations().size());
+		// NOTE 250624 : Pourquoi on déclenche calculateRewards ici ???? On renvoi un VisitedLocation (userId, location, timeVisited).
+		rewardsService.calculateRewards(user);
+		return visitedLocation;
+	}
 
-	public CompletableFuture<VisitedLocation> trackUserLocation(User user) {
-		return CompletableFuture.supplyAsync(() -> {
-			//logger.info("Method trackUserLocation of {}", user.getUserName());
-			return gpsUtil.getUserLocation(user.getUserId());
-		}, executor).thenApply(visitedLocation -> {
-			user.addToVisitedLocations(visitedLocation);
-			//logger.info("Method trackUserLocation --> getUserLocation of {} ({}) is : lat = {} / long = {}",
-			//		user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
-			return visitedLocation;
-		}).thenCompose(visitedLocation -> {
+	// NOTE 250627 : Finalement on ne va pas utiliser cette façon de faire... Retour à l'original
+//	public CompletableFuture<VisitedLocation> trackUserLocation(User user) {
+//		return CompletableFuture.supplyAsync(() -> {
+//			//logger.info("Method trackUserLocation of {}", user.getUserName());
+//			return gpsUtil.getUserLocation(user.getUserId());
+//		}, executor).thenApply(visitedLocation -> {
+//			user.addToVisitedLocations(visitedLocation);
+//			//logger.info("Method trackUserLocation --> getUserLocation of {} ({}) is : lat = {} / long = {}",
+//			//		user.getUserName(), visitedLocation.timeVisited, visitedLocation.location.latitude, visitedLocation.location.longitude);
+//			return visitedLocation;
+//		}).thenCompose(visitedLocation -> {
 //			return CompletableFuture.runAsync(() -> {
 //				rewardsService.calculateRewards(user);
 //			}, executor).thenApply(v -> visitedLocation);
-			// Remplacez calculateRewards par calculateRewardsAsync
-			return rewardsService.calculateRewardsASync(user).thenApply(v -> visitedLocation);
-		}).thenApply(visitedLocation -> {
-			//logger.info("Method trackUserLocation --> {} visited {} locations",
-			//		user.getUserName(), user.getVisitedLocations().size());
-			return visitedLocation;
-		});
+//			// Remplacez calculateRewards par calculateRewardsAsync
+////			return rewardsService.calculateRewardsASync(user).thenApply(v -> visitedLocation);
+//		}).thenApply(visitedLocation -> {
+//			//logger.info("Method trackUserLocation --> {} visited {} locations",
+//			//		user.getUserName(), user.getVisitedLocations().size());
+//			return visitedLocation;
+//		});
+//	}
+
+	// NOTE 250627 : Nouvelle méthode pour gérer les listes
+	public List<VisitedLocation> trackAllUsersLocation(List<User> users) {
+		// Use thread-safe list or gather results with CompletableFuture
+		List<VisitedLocation> visitedLocations = Collections.synchronizedList(new ArrayList<>());
+		List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+		for (User user : users) {
+			CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
+				VisitedLocation visitedLocation = trackUserLocation(user);
+				visitedLocations.add(visitedLocation);
+				return visitedLocation;
+			}, executor).thenAccept(result -> {});
+
+			futures.add(future);
+		}
+
+		CompletableFuture<Void> allOf = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+		allOf.join();
+
+		return visitedLocations;
 	}
+
 
 	// NOTE 250623 : Cette méthode est remplacée par getTop5Attractions
 	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
@@ -151,19 +179,19 @@ public class TourGuideService {
 	// NOTE 250623 : Cette méthode remplace getNearByAttractions car la demande client a évoluée
 	//  Instead: Get the closest five tourist attractions to the user - no matter how far away they are.
 	public List<AttractionInfo> getTop5Attractions(VisitedLocation visitedLocation) {
-		logger.info("Method getTop5Attractions of {}", visitedLocation.userId);
+		logger.info("Method getTop5Attractions --> start with visitedLocation.userId = {}", visitedLocation.userId);
 
 		// NOTE 250623 : Récupère les attractions
-		logger.info("Method getTop5Attractions --> Récupère les attractions");
+//		logger.info("Method getTop5Attractions --> Récupère les attractions");
 		List<Attraction> attractions = gpsUtil.getAttractions();
-		if (attractions.isEmpty()) {
-			logger.info("Method getTop5Attractions --> Aucune attraction récupérée");
-		} else {
-			logger.info("Method getTop5Attractions --> {} attractions récupérées", attractions.size());
-		}
+//		if (attractions.isEmpty()) {
+//			logger.info("Method getTop5Attractions --> Aucune attraction récupérée");
+//		} else {
+//			logger.info("Method getTop5Attractions --> {} attractions récupérées", attractions.size());
+//		}
 
 		// NOTE 250623 : Calcul de la distance entre l'utilisateur et chaque attraction
-		logger.info("Method getTop5Attractions --> Calcul de la distance entre l'utilisateur et les attractions");
+//		logger.info("Method getTop5Attractions --> Calcul de la distance entre l'utilisateur et les attractions");
 		Map<String, Double> mapDistance = new HashMap<>();
 		for (Attraction attraction : attractions) {
 			Location attractionLocation = new Location(attraction.latitude, attraction.longitude);
