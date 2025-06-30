@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 import org.junit.jupiter.api.Test;
 
@@ -34,13 +33,6 @@ public class TestRewardsService {
 		Attraction attraction = gpsUtil.getAttractions().get(0);
 		user.addToVisitedLocations(new VisitedLocation(user.getUserId(), attraction, new Date()));
 
-//		tourGuideService.trackUserLocation(user);
-		// NOTE 250624 : Implémentation du CompletableFuture sur trackUserLocation
-
-//		CompletableFuture<VisitedLocation> future = tourGuideService.trackUserLocation(user);
-//		VisitedLocation visitedLocation = future.join();
-		// NOTE 250627 : Finalement j'ai changé de fonctionnement
-
 		tourGuideService.trackUserLocation(user);
 
 		List<UserReward> userRewards = user.getUserRewards();
@@ -66,19 +58,11 @@ public class TestRewardsService {
 
 		InternalTestHelper.setInternalUserNumber(1);
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
-		// NOTE 250626 : Code déplacé
-		//tourGuideService.tracker.stopTracking();
 
-		// NOTE 250626 : Utilisation de calculateRewardsAsync et attente de la fin de l'exécution - finalement c'est mieux sans le ASync
 		rewardsService.calculateRewards(tourGuideService.getAllUsers().get(0));
-//		rewardsService.calculateRewardsASync(tourGuideService.getAllUsers().get(0)).join();
 
 		List<UserReward> userRewards = tourGuideService.getUserRewards(tourGuideService.getAllUsers().get(0));
-		// NOTE 250626 : Code déplacé au-dessus
 		tourGuideService.tracker.stopTracking();
-
-//		System.out.println("gpsUtil.getAttractions().size() = " + gpsUtil.getAttractions().size());
-//		System.out.println("userRewards.size() = " + userRewards.size());
 
 		assertEquals(gpsUtil.getAttractions().size(), userRewards.size());
 	}
