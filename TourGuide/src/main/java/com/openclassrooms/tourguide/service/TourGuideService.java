@@ -1,6 +1,6 @@
 package com.openclassrooms.tourguide.service;
 
-import com.openclassrooms.tourguide.DTO.AttractionDTO;
+import com.openclassrooms.tourguide.dto.AttractionDTO;
 import com.openclassrooms.tourguide.helper.InternalTestHelper;
 import com.openclassrooms.tourguide.tracker.Tracker;
 import com.openclassrooms.tourguide.user.User;
