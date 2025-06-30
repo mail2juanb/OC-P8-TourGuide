@@ -124,7 +124,6 @@ public class TourGuideService {
 		return visitedLocations;
 	}
 
-
 	// NOTE 250623 : Cette méthode est remplacée par getTop5Attractions
 	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
 		List<Attraction> nearbyAttractions = new ArrayList<>();
@@ -136,88 +135,58 @@ public class TourGuideService {
 		return nearbyAttractions;
 	}
 
-
 	// NOTE 250623 : Cette méthode remplace getNearByAttractions car la demande client a évoluée
 	//  Instead: Get the closest five tourist attractions to the user - no matter how far away they are.
 	public List<AttractionDTO> getTop5Attractions(VisitedLocation visitedLocation) {
-		logger.info("Method getTop5Attractions --> start with visitedLocation.userId = {}", visitedLocation.userId);
 
 		// NOTE 250623 : Récupère les attractions
-//		logger.info("Method getTop5Attractions --> Récupère les attractions");
 		List<Attraction> attractions = gpsUtil.getAttractions();
-//		if (attractions.isEmpty()) {
-//			logger.info("Method getTop5Attractions --> Aucune attraction récupérée");
-//		} else {
-//			logger.info("Method getTop5Attractions --> {} attractions récupérées", attractions.size());
-//		}
 
-		// NOTE 250623 : Calcul de la distance entre l'utilisateur et chaque attraction
-//		logger.info("Method getTop5Attractions --> Calcul de la distance entre l'utilisateur et les attractions");
-		Map<String, Double> mapDistance = new HashMap<>();
-		for (Attraction attraction : attractions) {
-			Location attractionLocation = new Location(attraction.latitude, attraction.longitude);
-			mapDistance.put(attraction.attractionName, rewardsService.getDistance(visitedLocation.location, attractionLocation));
-		}
-
-		// NOTE 250423 : Trie des attractions par distance, de la plus petite à la plus grande
-		logger.info("Method getTop5Attractions --> Trie les entrées de la liste");
-		List<Map.Entry<String, Double>> distanceSort = new ArrayList<>(mapDistance.entrySet());
-		distanceSort.sort(Map.Entry.comparingByValue());
-
-		// NOTE 250623 : Filtre les 5 attractions les plus proches
-		logger.info("Method getTop5Attractions --> Filtre les 5 attractions les plus proches");
-		List<Map.Entry<String, Double>> distanceSortLimit = distanceSort.stream().limit(5).toList();
-		for (Map.Entry<String, Double> entry : distanceSortLimit) {
-			logger.info("Method getTop5Attractions --> AttractionName = {} // Distance = {}", entry.getKey(), entry.getValue());
-		}
-
-		// NOTE 250623 : création de la liste des 5 attractions les plus proches
-		logger.info("Method getTop5Attractions --> Création de la liste des 5 attractions les plus proches");
-		List<String> attractionNameSelected = distanceSortLimit.stream()
-				.map(Map.Entry::getKey)
+		// NOTE 250630 : Calculer les distances et trier les attractions
+		List<Attraction> topFiveAttractionsNear = attractions.stream()
+				.map(attraction -> {
+					Location attractionLocation = new Location(attraction.latitude, attraction.longitude);
+					double distance = rewardsService.getDistance(visitedLocation.location, attractionLocation);
+					return new AttractionWithDistance(attraction, distance);
+				})
+				.sorted(Comparator.comparingDouble(AttractionWithDistance::distance))
+				.limit(5)
+				.map(AttractionWithDistance::attraction)
 				.toList();
-		List<Attraction> topFiveAttractionsNear = attractionNameSelected.stream()
-				.map(name -> attractions.stream()
-						.filter(attraction -> attraction.attractionName.equals(name))
-						.findFirst()
-						.orElse(null))
-				.filter(Objects::nonNull)
+
+		// Log les attractions sélectionnées
+		IntStream.range(0, topFiveAttractionsNear.size()).forEach(i -> {
+			Attraction att = topFiveAttractionsNear.get(i);
+		});
+
+		// Get reward points for the selected attractions and create AttractionInfo list
+		List<AttractionDTO> attractionInfoList = topFiveAttractionsNear.stream()
+				.map(att -> {
+					Location attractionLocation = new Location(att.latitude, att.longitude);
+					double distance = rewardsService.getDistance(visitedLocation.location, attractionLocation);
+					int rewardPoints = rewardsService.getRewardPoints(att, visitedLocation.userId);
+					return new AttractionDTO(
+							att.attractionName,
+							att.latitude,
+							att.longitude,
+							visitedLocation.location.latitude,
+							visitedLocation.location.longitude,
+							distance,
+							rewardPoints
+					);
+				})
 				.toList();
-		int i = 1;
-		for (Attraction att : topFiveAttractionsNear) {
-			logger.info("Method getTop5Attractions --> {} - Attraction Selected = {}", i++, att.attractionName);
-		}
 
-		// NOTE 250623 : Récupère les RewardPoints des Attractions selected
-		logger.info("Method getTop5Attractions --> Récupère les RewardPoints des Attractions sélectionnées ");
-		Map<String, Integer> attractionRewardPoints = new HashMap<>();
-		for (Attraction att : topFiveAttractionsNear) {
-			attractionRewardPoints.put(att.attractionName, rewardsService.getRewardPoints(att, visitedLocation.userId));
-		}
-		for (Map.Entry<String, Integer> attRP : attractionRewardPoints.entrySet()) {
-			logger.info("Method getTop5Attractions --> AttractionName = {} // RewardPoints = {}", attRP.getKey(), attRP.getValue());
-		}
-
-		// NOTE 250620 : Transforme la List<HashMap> en HashMap pour l'utiliser dans la construction de
-		Map<String, Double> mapDistanceSortedLimit = distanceSortLimit.stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-		// NOTE 250623 : création de la liste des 5 AttractionDTO les plus proches de l'utilisateur
-		List<AttractionDTO> attractionDTOList = new ArrayList<>();
-		for (Attraction att : topFiveAttractionsNear) {
-			AttractionDTO attractionDTO = new AttractionDTO(
-					att.attractionName,
-					att.latitude,
-					att.longitude,
-					visitedLocation.location.latitude,
-					visitedLocation.location.longitude,
-					mapDistanceSortedLimit.get(att.attractionName),
-					attractionRewardPoints.get(att.attractionName)
-			);
-			attractionDTOList.add(attractionDTO);
-		}
-
-		return attractionDTOList;
+		return attractionInfoList;
 	}
+
+	// NOTE 250630 : Définir le record AttractionWithDistance.
+	// Les composants sont automatiquement privés et finals.
+	// Pour chaque composant, un accesseur (méthode getter) est généré.
+	// Méthodes automatiques : equals(), hashCode(), et toString().
+	record AttractionWithDistance(Attraction attraction, double distance) {
+	}
+
 
 	private void addShutDownHook() {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
