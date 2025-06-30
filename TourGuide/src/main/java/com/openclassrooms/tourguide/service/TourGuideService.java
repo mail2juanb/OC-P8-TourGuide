@@ -1,6 +1,6 @@
 package com.openclassrooms.tourguide.service;
 
-import com.openclassrooms.tourguide.attraction.AttractionInfo;
+import com.openclassrooms.tourguide.attraction.AttractionDTO;
 import com.openclassrooms.tourguide.helper.InternalTestHelper;
 import com.openclassrooms.tourguide.tracker.Tracker;
 import com.openclassrooms.tourguide.user.User;
@@ -139,7 +139,7 @@ public class TourGuideService {
 
 	// NOTE 250623 : Cette méthode remplace getNearByAttractions car la demande client a évoluée
 	//  Instead: Get the closest five tourist attractions to the user - no matter how far away they are.
-	public List<AttractionInfo> getTop5Attractions(VisitedLocation visitedLocation) {
+	public List<AttractionDTO> getTop5Attractions(VisitedLocation visitedLocation) {
 		logger.info("Method getTop5Attractions --> start with visitedLocation.userId = {}", visitedLocation.userId);
 
 		// NOTE 250623 : Récupère les attractions
@@ -201,10 +201,10 @@ public class TourGuideService {
 		// NOTE 250620 : Transforme la List<HashMap> en HashMap pour l'utiliser dans la construction de
 		Map<String, Double> mapDistanceSortedLimit = distanceSortLimit.stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-		// NOTE 250623 : création de la liste des 5 AttractionInfo les plus proches de l'utilisateur
-		List<AttractionInfo> attractionInfoList = new ArrayList<>();
+		// NOTE 250623 : création de la liste des 5 AttractionDTO les plus proches de l'utilisateur
+		List<AttractionDTO> attractionDTOList = new ArrayList<>();
 		for (Attraction att : topFiveAttractionsNear) {
-			AttractionInfo attractionInfo = new AttractionInfo(
+			AttractionDTO attractionDTO = new AttractionDTO(
 					att.attractionName,
 					att.latitude,
 					att.longitude,
@@ -213,10 +213,10 @@ public class TourGuideService {
 					mapDistanceSortedLimit.get(att.attractionName),
 					attractionRewardPoints.get(att.attractionName)
 			);
-			attractionInfoList.add(attractionInfo);
+			attractionDTOList.add(attractionDTO);
 		}
 
-		return attractionInfoList;
+		return attractionDTOList;
 	}
 
 	private void addShutDownHook() {

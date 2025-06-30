@@ -5,9 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
-import com.openclassrooms.tourguide.attraction.AttractionInfo;
+import com.openclassrooms.tourguide.attraction.AttractionDTO;
 import org.junit.jupiter.api.Test;
 
 import gpsUtil.GpsUtil;
@@ -126,7 +125,7 @@ public class TestTourGuideService {
 
 		// NOTE 250624 : Utilisation de la nouvelle méthode
 //		List<Attraction> attractions = tourGuideService.getNearByAttractions(visitedLocation);
-		List<AttractionInfo> attractions = tourGuideService.getTop5Attractions(visitedLocation);
+		List<AttractionDTO> attractions = tourGuideService.getTop5Attractions(visitedLocation);
 
 		tourGuideService.tracker.stopTracking();
 

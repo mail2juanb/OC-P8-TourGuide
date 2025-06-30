@@ -1,12 +1,12 @@
 package com.openclassrooms.tourguide.attraction;
 
-public class AttractionInfo {
+public class AttractionDTO {
 
     // Name of Tourist attraction,
     // Tourist attractions lat/long,
     // The user's location lat/long,
     // The distance in miles between the user's location and each of the attractions.
-    // The reward points for visiting each AttractionInfo.
+    // The reward points for visiting each Attraction.
 
     private String attractionName;
     private double attractionLat;
@@ -16,7 +16,7 @@ public class AttractionInfo {
     private double distance;
     private int rewardPoints;
 
-    public AttractionInfo(String attractionName, double attractionLat, double attractionLong, double userLat, double userLong, double distance, int rewardPoints) {
+    public AttractionDTO(String attractionName, double attractionLat, double attractionLong, double userLat, double userLong, double distance, int rewardPoints) {
         this.attractionName = attractionName;
         this.attractionLat = attractionLat;
         this.attractionLong = attractionLong;
