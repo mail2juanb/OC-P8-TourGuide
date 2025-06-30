@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import java.util.UUID;
 
-import com.openclassrooms.tourguide.attraction.AttractionDTO;
+import com.openclassrooms.tourguide.DTO.AttractionDTO;
 import org.junit.jupiter.api.Test;
 
 import gpsUtil.GpsUtil;

@@ -1,4 +1,4 @@
-package com.openclassrooms.tourguide.attraction;
+package com.openclassrooms.tourguide.DTO;
 
 public class AttractionDTO {
 
