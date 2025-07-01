@@ -53,6 +53,6 @@ jobs:
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
-          name: app-jar
-          path: TourGuide/target/*.jar.original
+          name: app-TourGuide-jar
+          path: TourGuide/target/JAR/*.jar.original
           
