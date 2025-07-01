@@ -40,8 +40,8 @@ jobs:
       - name: Compile with Maven
         run: mvn compile -B --file TourGuide/pom.xml
 
-#      - name: Test with Maven
-#        run: mvn test -B --file TourGuide/pom.xml
+      - name: Test with Maven
+        run: mvn test -B --file TourGuide/pom.xml
 
       - name: Notify on test failure
         if: failure()
@@ -49,9 +49,6 @@ jobs:
 
       - name: Package with Maven
         run: mvn package -DskipTests=true -B --file TourGuide/pom.xml
-
-      - name: List target directory
-        run: ls -R TourGuide/target/
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
