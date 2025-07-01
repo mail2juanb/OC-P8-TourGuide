@@ -50,9 +50,12 @@ jobs:
       - name: Package with Maven
         run: mvn package -DskipTests=true -B --file TourGuide/pom.xml
 
+      - name: List target directory
+        run: ls -R TourGuide/target/
+
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
           name: app-TourGuide-jar
-#          path: TourGuide/target/*.jar
+          path: TourGuide/target/*.jar
           
