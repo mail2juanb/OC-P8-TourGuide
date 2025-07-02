@@ -214,14 +214,14 @@ public class TourGuideService {
 
 		// NOTE 250630 : Get reward points for the selected attractions and create AttractionDTO list
 		List<AttractionDTO> attractionInfoList = topFiveAttractionsNear.stream()
-				.map(attraction -> {
-					Location attractionLocation = new Location(attraction.latitude, attraction.longitude);
+				.map(att -> {
+					Location attractionLocation = new Location(att.latitude, att.longitude);
 					double distance = rewardsService.getDistance(visitedLocation.location, attractionLocation);
-					int rewardPoints = rewardsService.getRewardPoints(attraction, visitedLocation.userId);
+					int rewardPoints = rewardsService.getRewardPoints(att, visitedLocation.userId);
 					return new AttractionDTO(
-							attraction.attractionName,
-							attraction.latitude,
-							attraction.longitude,
+							att.attractionName,
+							att.latitude,
+							att.longitude,
 							visitedLocation.location.latitude,
 							visitedLocation.location.longitude,
 							distance,
