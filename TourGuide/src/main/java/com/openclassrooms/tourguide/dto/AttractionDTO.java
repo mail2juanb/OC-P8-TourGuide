@@ -2,12 +2,6 @@ package com.openclassrooms.tourguide.dto;
 
 public class AttractionDTO {
 
-    // Name of Tourist attraction,
-    // Tourist attractions lat/long,
-    // The user's location lat/long,
-    // The distance in miles between the user's location and each of the attractions.
-    // The reward points for visiting each Attraction.
-
     private String attractionName;
     private double attractionLat;
     private double attractionLong;

@@ -20,7 +20,6 @@ public class Tracker extends Thread {
 
 	// NOTE 250624 : Modification pour passer a un thread(16) plus performant
 	private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-//	private final ExecutorService executorService = Executors.newFixedThreadPool();
 	private final TourGuideService tourGuideService;
 	private boolean stop = false;
 
@@ -51,14 +50,6 @@ public class Tracker extends Thread {
 			logger.debug("Begin Tracker. Tracking " + users.size() + " users.");
 			stopWatch.start();
 
-//			users.forEach(u -> tourGuideService.trackUserLocation(u));
-			// NOTE 250624 : Implémentation du CompletableFuture sur trackUserLocation
-//			List<CompletableFuture<VisitedLocation>> futures = users.stream()
-//							.map(tourGuideService::trackUserLocation)
-//					        .toList();
-//			CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-//			allFutures.join();
-			// NOTE 250627 : Retour à l'original
 			users.forEach(tourGuideService::trackUserLocation);
 
 			stopWatch.stop();

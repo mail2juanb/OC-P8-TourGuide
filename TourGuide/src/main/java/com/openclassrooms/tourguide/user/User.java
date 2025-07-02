@@ -15,18 +15,9 @@ public class User {
 	private String emailAddress;
 	private Date latestLocationTimestamp;
 
-	// NOTE 250618 : Ces 2 listes sont susceptibles d'être modifiées tout en étant parcourues
-	// NOTE 250623 : En fait je pense que ce n'est pas ici qu'il faut l'utiliser
-//	private List<VisitedLocation> visitedLocations = new CopyOnWriteArrayList<>();
-//	private List<UserReward> userRewards = new CopyOnWriteArrayList<>();
 	private List<VisitedLocation> visitedLocations = new ArrayList<>();
 	private List<UserReward> userRewards = new ArrayList<>();
-
 	private UserPreferences userPreferences = new UserPreferences();
-
-	// NOTE 250618 : Cette liste est susceptible d'être modifiée tout en étant parcourues
-	// NOTE 250623 : En fait je pense que ce n'est pas ici qu'il faut l'utiliser
-//	private List<Provider> tripDeals = new CopyOnWriteArrayList<>();
 	private List<Provider> tripDeals = new ArrayList<>();
 
 	public User(UUID userId, String userName, String phoneNumber, String emailAddress) {
