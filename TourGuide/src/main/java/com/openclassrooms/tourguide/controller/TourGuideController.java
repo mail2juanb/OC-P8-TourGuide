@@ -21,7 +21,7 @@ import tripPricer.Provider;
 @RestController
 public class TourGuideController {
 
-    private static final Logger logger = LoggerFactory.getLogger(TourGuideController.class);
+
     @Autowired
     TourGuideService tourGuideService;
 
