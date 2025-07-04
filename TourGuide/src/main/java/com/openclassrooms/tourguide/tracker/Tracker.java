@@ -1,18 +1,16 @@
 package com.openclassrooms.tourguide.tracker;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import gpsUtil.location.VisitedLocation;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.openclassrooms.tourguide.service.TourGuideService;
-import com.openclassrooms.tourguide.user.User;
+import com.openclassrooms.tourguide.model.User;
 
 public class Tracker extends Thread {
 	private Logger logger = LoggerFactory.getLogger(Tracker.class);

@@ -10,8 +10,8 @@ import gpsUtil.location.Attraction;
 import gpsUtil.location.Location;
 import gpsUtil.location.VisitedLocation;
 import rewardCentral.RewardCentral;
-import com.openclassrooms.tourguide.user.User;
-import com.openclassrooms.tourguide.user.UserReward;
+import com.openclassrooms.tourguide.model.User;
+import com.openclassrooms.tourguide.model.UserReward;
 
 @Service
 public class RewardsService {
@@ -65,8 +65,8 @@ public class RewardsService {
 	 * @see UserReward
 	 */
 	public void calculateRewards(User user) {
-		// NOTE 250618 : Modification afin d'éviter l'erreur ConcurrentModificationException
 //		List<VisitedLocation> userLocations = user.getVisitedLocations();
+		// NOTE 250618 : Modification afin d'éviter l'erreur ConcurrentModificationException
 		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
 		List<Attraction> attractions = gpsUtil.getAttractions();
 
