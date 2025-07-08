@@ -30,8 +30,7 @@ import tripPricer.TripPricer;
 @Service
 public class TourGuideService {
 	private Logger logger = LoggerFactory.getLogger(TourGuideService.class);
-	// NOTE 250624 : Pool de thread pour l'utilisation de la classe CompletableFuture
-	private static final Executor executor = Executors.newFixedThreadPool(256); // old=52 // 132 // 200
+	private static final Executor executor = Executors.newFixedThreadPool(256);
 	private final GpsUtil gpsUtil;
 	private final RewardsService rewardsService;
 	private final TripPricer tripPricer = new TripPricer();
@@ -71,12 +70,7 @@ public class TourGuideService {
 	 * @see VisitedLocation
 	 */
 	public VisitedLocation getUserLocation(User user) {
-//		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation()
-//				: trackUserLocation(user);
-//		return visitedLocation;
-		// NOTE 250630 : Ré-écriture pour meilleur lisibilité et compréhension
-		return (user.getVisitedLocations().isEmpty()) ? trackUserLocation(user)
-				: user.getLastVisitedLocation();
+		return (user.getVisitedLocations().isEmpty()) ? trackUserLocation(user) : user.getLastVisitedLocation();
 	}
 
 
@@ -89,11 +83,13 @@ public class TourGuideService {
 		return internalUserMap.values().stream().collect(Collectors.toList());
 	}
 
+
 	public void addUser(User user) {
 		if (!internalUserMap.containsKey(user.getUserName())) {
 			internalUserMap.put(user.getUserName(), user);
 		}
 	}
+
 
 	/** Retrieves a list of trip deals for a given user based on their preferences and reward points.
 	 * This method calculates the cumulative reward points of the user and uses them along with
@@ -110,8 +106,6 @@ public class TourGuideService {
 	 * @see Provider
 	 */
 	public List<Provider> getTripDeals(User user) {
-//		int cumulatativeRewardPoints = user.getUserRewards().stream().mapToInt(i -> i.getRewardPoints()).sum();
-		// NOTE 250702 : Ré-écriture pour meilleur compréhension
 		int cumulatativeRewardPoints = user.getUserRewards().stream().mapToInt(UserReward::getRewardPoints).sum();
 		List<Provider> providers = tripPricer.getPrice(tripPricerApiKey, user.getUserId(),
 				user.getUserPreferences().getNumberOfAdults(), user.getUserPreferences().getNumberOfChildren(),
@@ -119,6 +113,7 @@ public class TourGuideService {
 		user.setTripDeals(providers);
 		return providers;
 	}
+
 
 	/** Tracks the current location of a user and updates their visited locations list.
 	 * This method also triggers the calculation of rewards for the user based on their location.
@@ -136,6 +131,7 @@ public class TourGuideService {
 		return visitedLocation;
 	}
 
+
 	/** Tracks the current locations of all users in the provided list concurrently.
 	 * This method uses asynchronous processing to handle each user's location tracking
 	 * and collects the results in a thread-safe manner.
@@ -148,18 +144,12 @@ public class TourGuideService {
 	 * @see VisitedLocation
 	 * @see CompletableFuture
 	 */
-	// NOTE 250627 : Nouvelle méthode pour gérer les listes
 	public List<VisitedLocation> trackAllUsersLocation(List<User> users) {
-		// Use thread-safe list or gather results with CompletableFuture
 		List<VisitedLocation> visitedLocations = Collections.synchronizedList(new ArrayList<>());
 		List<CompletableFuture<Void>> futures = new ArrayList<>();
 
 		for (User user : users) {
 			CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
-//				VisitedLocation visitedLocation = trackUserLocation(user);
-//				visitedLocations.add(visitedLocation);
-//				return visitedLocation;
-				// NOTE 250702 : Modification pour intégrer les éventuelles erreurs
 				try {
 					VisitedLocation visitedLocation = trackUserLocation(user);
 					visitedLocations.add(visitedLocation);
@@ -168,7 +158,6 @@ public class TourGuideService {
 					throw new RuntimeException("Failed to track location for user: " + user.getUserName(), e);
 				}
 			}, executor).thenAccept(result -> {
-				// NOTE 250702 : Modification pour intégrer les éventuelles erreurs
 			}).exceptionally(ex -> {
 				System.err.println("An error occurred in thread " + Thread.currentThread().getName() + ": " + ex.getMessage());
 				return null;
@@ -193,14 +182,9 @@ public class TourGuideService {
 	 * @see AttractionWithDistance
 	 * @see AttractionDTO
 	 */
-	// NOTE 250623 : Cette méthode remplace getNearByAttractions car la demande client a évoluée
-	//  Instead: Get the closest five tourist attractions to the user - no matter how far away they are.
 	public List<AttractionDTO> getNearByAttractions(VisitedLocation visitedLocation) {
-
-		// NOTE 250623 : Récupère les attractions
 		List<Attraction> attractions = gpsUtil.getAttractions();
 
-		// NOTE 250630 : Calculer les distances et trier les attractions
 		List<Attraction> topFiveAttractionsNear = attractions.stream()
 				.map(attraction -> {
 					Location attractionLocation = new Location(attraction.latitude, attraction.longitude);
@@ -212,7 +196,6 @@ public class TourGuideService {
 				.map(AttractionWithDistance::attraction)
 				.toList();
 
-		// NOTE 250630 : Get reward points for the selected attractions and create AttractionDTO list
 		List<AttractionDTO> attractionInfoList = topFiveAttractionsNear.stream()
 				.map(att -> {
 					Location attractionLocation = new Location(att.latitude, att.longitude);
@@ -233,10 +216,18 @@ public class TourGuideService {
 		return attractionInfoList;
 	}
 
-	// NOTE 250630 : Définir le record AttractionWithDistance.
-	// Les composants sont automatiquement privés et finals.
-	// Pour chaque composant, un accesseur (méthode getter) est généré.
-	// Méthodes automatiques : equals(), hashCode(), et toString().
+
+	/**
+	 * Represents an attraction along with its distance.
+	 *
+	 * <p>This record encapsulates an {@link Attraction} object and a distance value,
+	 * providing a convenient way to associate an attraction with its respective distance.
+	 * The components of this record are automatically private and final, and it includes
+	 * built-in methods such as {@code equals()}, {@code hashCode()}, and {@code toString()}.</p>
+	 *
+	 * @param attraction the attraction object
+	 * @param distance the distance associated with the attraction
+	 */
 	record AttractionWithDistance(Attraction attraction, double distance) {
 	}
 

@@ -72,8 +72,6 @@ public class User {
 	}
 	
 	public void addUserReward(UserReward userReward) {
-		// NOTE 250628 : Ré-écriture pour meilleure lisibilité
-//		if(userRewards.stream().filter(r -> !r.dto.attractionName.equals(userReward.dto)).count() == 0) {
 		if (userRewards.stream().noneMatch(r -> r.attraction.attractionName.equals(userReward.attraction.attractionName))) {
 			userRewards.add(userReward);
 		}
