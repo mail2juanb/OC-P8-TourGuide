@@ -10,8 +10,8 @@ import gpsUtil.location.Attraction;
 import gpsUtil.location.Location;
 import gpsUtil.location.VisitedLocation;
 import rewardCentral.RewardCentral;
-import com.openclassrooms.tourguide.model.User;
-import com.openclassrooms.tourguide.model.UserReward;
+import com.openclassrooms.tourguide.user.User;
+import com.openclassrooms.tourguide.user.UserReward;
 
 @Service
 public class RewardsService {
@@ -23,7 +23,7 @@ public class RewardsService {
 	private int attractionProximityRange = 200;
 	private final GpsUtil gpsUtil;
 	private final RewardCentral rewardsCentral;
-	private final ExecutorService executorService = Executors.newFixedThreadPool(512); // old 400
+	private final ExecutorService executorService = Executors.newFixedThreadPool(512);
 
 
 	
@@ -65,15 +65,11 @@ public class RewardsService {
 	 * @see UserReward
 	 */
 	public void calculateRewards(User user) {
-//		List<VisitedLocation> userLocations = user.getVisitedLocations();
-		// NOTE 250618 : Modification afin d'éviter l'erreur ConcurrentModificationException
 		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
 		List<Attraction> attractions = gpsUtil.getAttractions();
 
 		for (VisitedLocation visitedLocation : userLocations) {
 			for (Attraction attraction : attractions) {
-				// NOTE 250623 : Ré-écriture pour meilleure compréhension
-//				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
 				if (user.getUserRewards().stream().noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))) {
 					if (nearAttraction(visitedLocation, attraction)) {
 						UserReward reward = new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user));
@@ -84,11 +80,7 @@ public class RewardsService {
 		}
 	}
 
-	// NOTE 250627 : Nouvelle méthode qui gère les listes
-	// NOTE 250702 : j'ai ajouté une vérification pour voir si l'ExecutorService a terminé dans le temps imparti.
-	// Si ce n'est pas le cas, un message d'avertissement est imprimé.
-	// De plus, j'ai amélioré la gestion de l'exception InterruptedException en restaurant l'état d'interruption
-	// du thread, ce qui est une bonne pratique lorsque vous attrapez cette exception.
+
 	/**
 	 * Calculates rewards for all users in the provided list by submitting each user's
 	 * reward calculation task to an {@link java.util.concurrent.ExecutorService}.
@@ -108,16 +100,12 @@ public class RewardsService {
 		users.forEach(user -> executorService.submit(new Thread(() -> calculateRewards(user))));
 		executorService.shutdown();
 		try {
-//			executorService.awaitTermination(20, TimeUnit.MINUTES);
-			// NOTE 250702 : Modification pour meilleur remonté d'erreur
 			boolean terminated = executorService.awaitTermination(20, TimeUnit.MINUTES);
 			if (!terminated) {
 				System.err.println("Warning: The executor did not terminate within the specified time.");
 			}
 		} catch (InterruptedException e) {
-//			e.printStackTrace();
-			// NOTE 250702 : Modification pour meilleur remonté d'erreur
-			Thread.currentThread().interrupt(); // Restaure l'état d'interruption
+			Thread.currentThread().interrupt();
 			System.err.println("Thread was interrupted while waiting for termination: " + e.getMessage());
 		}
 	}
@@ -134,7 +122,6 @@ public class RewardsService {
 		return rewardsCentral.getAttractionRewardPoints(attraction.attractionId, user.getUserId());
 	}
 
-	// NOTE 250620 : Création de la méthode. Plus simple d'utiliser directement l'UUID
 	public int getRewardPoints(Attraction attraction, UUID userId) {
 		return rewardsCentral.getAttractionRewardPoints(attraction.attractionId, userId);
 	}

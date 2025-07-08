@@ -15,7 +15,7 @@ import rewardCentral.RewardCentral;
 import com.openclassrooms.tourguide.helper.InternalTestHelper;
 import com.openclassrooms.tourguide.service.RewardsService;
 import com.openclassrooms.tourguide.service.TourGuideService;
-import com.openclassrooms.tourguide.model.User;
+import com.openclassrooms.tourguide.user.User;
 import tripPricer.Provider;
 
 
