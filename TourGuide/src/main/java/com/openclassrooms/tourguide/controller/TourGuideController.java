@@ -30,7 +30,7 @@ public class TourGuideController {
      */
     @RequestMapping("/")
     public String index() {
-        return "Greetings from TourGuide!";
+        return "Greetings from TourGuide! Little Test";
     }
 
 
